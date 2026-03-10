@@ -1,0 +1,1 @@
+ALTER TABLE public.emendas ADD COLUMN ano_exercicio INTEGER NOT NULL DEFAULT 2025;
