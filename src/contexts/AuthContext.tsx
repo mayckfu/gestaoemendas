@@ -10,6 +10,8 @@ import { User, UserRole } from '@/lib/mock-data'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { Session } from '@supabase/supabase-js'
+import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
+import { VISITOR_USERS } from '@/lib/visitor/visitorMockData'
 
 interface AuthContextType {
   user: User | null
@@ -58,6 +60,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   useEffect(() => {
+    // Modo Visitante: usa usuário mock, não precisa do Supabase Auth
+    if (isVisitorActive()) {
+      const visitorUser = VISITOR_USERS.find(u => u.id === 'user-visitante') || VISITOR_USERS[0]
+      setUser({ ...visitorUser, role: 'GESTOR' })
+      setIsLoading(false)
+      return
+    }
+
     // Strictly synchronous callback for onAuthStateChange
     const {
       data: { subscription },
@@ -133,6 +143,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setIsLoading(true)
     try {
+      // Clear visitor session if active
+      if (isVisitorActive()) {
+        const { clearVisitorData } = await import('@/lib/visitor/visitorStorageManager')
+        clearVisitorData()
+      }
+
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
@@ -164,7 +180,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session,
     login,
     logout,
-    isAuthenticated: !!session && !!user,
+    isAuthenticated: !!session && !!user || isVisitorActive(),
     isAdmin: user?.role === 'ADMIN',
     isLoading,
     checkPermission,

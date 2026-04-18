@@ -88,6 +88,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { useYear } from '@/contexts/YearContext'
 import { supabase } from '@/lib/supabase/client'
+import { isVisitorActive } from '@/lib/visitor'
+import { visitorInsertEmenda, visitorUpdateEmenda, visitorDeleteEmenda } from '@/lib/visitor'
+import { amendmentService } from '@/services/amendmentService'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
@@ -243,20 +246,14 @@ const EmendasListPage = () => {
     setIsLoading(true)
     setError(null)
     try {
-      let query = supabase
-        .from('emendas')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (selectedYear && selectedYear !== 'all') {
-        query = query.eq('ano_exercicio', parseInt(selectedYear, 10))
-      }
-
-      const { data, error } = await query
-
+      const { data, error } = await amendmentService.getAmendments(selectedYear)
       if (error) throw error
-
-      setLocalAmendments(data as Amendment[])
+      
+      const emendas = data || []
+      // Sort by creation date descending
+      emendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      
+      setLocalAmendments(emendas)
     } catch (error: any) {
       console.error('Error fetching amendments:', error)
       setError(error.message || 'Erro ao carregar emendas.')
@@ -408,6 +405,27 @@ const EmendasListPage = () => {
 
   const handleFormSubmit = async (data: Partial<Amendment>) => {
     try {
+      if (isVisitorActive()) {
+        if (editingEmenda) {
+          const result = visitorUpdateEmenda(editingEmenda.id, data)
+          if (result.error) throw new Error(result.error.message)
+          setLocalAmendments((prev) =>
+            prev.map((item) =>
+              item.id === editingEmenda.id ? { ...item, ...data } : item,
+            ),
+          )
+          toast({ title: 'Emenda atualizada com sucesso! (Modo Visitante)' })
+        } else {
+          const result = visitorInsertEmenda(data as any)
+          if (result.error) throw new Error(result.error.message)
+          setLocalAmendments((prev) => [result.data as Amendment, ...prev])
+          toast({ title: 'Emenda criada com sucesso! (Modo Visitante)' })
+        }
+        setIsFormOpen(false)
+        setEditingEmenda(null)
+        return
+      }
+
       if (editingEmenda) {
         const { error } = await supabase
           .from('emendas')
@@ -449,12 +467,16 @@ const EmendasListPage = () => {
   const handleConfirmDelete = async () => {
     if (deletingEmenda) {
       try {
-        const { error } = await supabase
-          .from('emendas')
-          .delete()
-          .eq('id', deletingEmenda.id)
-
-        if (error) throw error
+        if (isVisitorActive()) {
+          const result = visitorDeleteEmenda(deletingEmenda.id)
+          if (result.error) throw new Error(result.error.message)
+        } else {
+          const { error } = await supabase
+            .from('emendas')
+            .delete()
+            .eq('id', deletingEmenda.id)
+          if (error) throw error
+        }
 
         setLocalAmendments((prev) =>
           prev.filter((item) => item.id !== deletingEmenda.id),

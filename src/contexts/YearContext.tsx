@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from './AuthContext'
+import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 
 interface YearContextType {
   selectedYear: string
@@ -47,7 +48,9 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
 
       let allowedStrings: string[] = []
 
-      if (error || !data || data.length === 0) {
+      if (isVisitorActive()) {
+        allowedStrings = ['2024', '2025', '2026']
+      } else if (error || !data || data.length === 0) {
         const currentYear = new Date().getFullYear()
         allowedStrings = [currentYear.toString(), (currentYear + 1).toString()]
       } else {

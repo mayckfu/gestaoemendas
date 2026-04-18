@@ -37,12 +37,13 @@ import {
 } from '@/components/ui/dialog'
 import { formatCurrencyBRL } from '@/lib/utils'
 import { supabase } from '@/lib/supabase/client'
-import { Amendment, TipoRecurso, TipoEmenda } from '@/lib/mock-data'
+import { Amendment, DetailedAmendment, TipoRecurso, TipoEmenda } from '@/lib/mock-data'
 import { EmendaForm } from '@/components/emendas/EmendaForm'
 import { useToast } from '@/components/ui/use-toast'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/StatusBadge'
 import { usePrivacy } from '@/contexts/PrivacyContext'
+import { isVisitorActive, getVisitorStore, updateVisitorStore } from '@/lib/visitor/visitorStorageManager'
 import { useYear } from '@/contexts/YearContext'
 
 const QuadroEstadualPage = () => {
@@ -50,13 +51,29 @@ const QuadroEstadualPage = () => {
   const { isPrivacyMode } = usePrivacy()
   const { selectedYear, setSelectedYear } = useYear()
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<Amendment[]>([])
+  const [data, setData] = useState<DetailedAmendment[]>([])
 
   const [selectedAuthor, setSelectedAuthor] = useState<string>('all')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+
+    if (isVisitorActive()) {
+      const store = getVisitorStore()
+      if (store) {
+        let emendas = store.emendas.filter(e => e.origem === 'ESTADUAL')
+        if (selectedYear && selectedYear !== 'all') {
+          emendas = emendas.filter(e => e.ano_exercicio === parseInt(selectedYear))
+        }
+        setData((emendas as any as DetailedAmendment[]) || [])
+      } else {
+        setData([])
+      }
+      setLoading(false)
+      return
+    }
+
     try {
       let query = supabase
         .from('emendas')
@@ -77,7 +94,7 @@ const QuadroEstadualPage = () => {
 
       if (error) throw error
 
-      setData((emendas as Amendment[]) || [])
+      setData((emendas as any as DetailedAmendment[]) || [])
     } catch (error: any) {
       console.error('Error fetching state amendments:', error)
       toast({
@@ -125,10 +142,31 @@ const QuadroEstadualPage = () => {
 
   const handleCreate = async (formData: Partial<Amendment>) => {
     try {
+      if (isVisitorActive()) {
+        const store = getVisitorStore()
+        if (store) {
+          const newEmenda = {
+            ...formData,
+            id: `visit-emenda-${Date.now()}`,
+            origem: 'ESTADUAL',
+            created_at: new Date().toISOString()
+          }
+          store.emendas.push(newEmenda as any)
+          updateVisitorStore(store)
+          toast({
+            title: 'Registro criado com sucesso',
+            description: 'A nova emenda estadual foi adicionada (Modo Visitante).',
+          })
+          setIsCreateOpen(false)
+          fetchData()
+        }
+        return
+      }
+
       const { error } = await supabase.from('emendas').insert({
         ...formData,
         origem: 'ESTADUAL',
-      })
+      } as any)
 
       if (error) throw error
 

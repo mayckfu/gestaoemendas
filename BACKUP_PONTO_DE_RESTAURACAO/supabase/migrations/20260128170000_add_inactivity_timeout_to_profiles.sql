@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS inactivity_timeout INTEGER NOT NULL DEFAULT 60;

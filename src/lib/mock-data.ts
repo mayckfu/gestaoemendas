@@ -84,6 +84,15 @@ export type Amendment = {
   valor_segundo_responsavel?: number | null
   // Origin field
   origem?: 'FEDERAL' | 'ESTADUAL'
+  // Technical fields (optional in base list)
+  natureza?: string
+  objeto_emenda?: string
+  meta_operacional?: string
+  destino_recurso?: string
+  data_repasse?: string
+  valor_repasse?: number
+  situacao_recurso?: string
+  observacoes?: string
 }
 
 export type Repasse = {
@@ -185,14 +194,6 @@ export type DetailedAmendment = Amendment & {
   historico: Historico[]
   pendencias: Pendencia[]
   acoes: ActionWithDestinations[]
-  natureza?: string
-  objeto_emenda?: string
-  meta_operacional?: string
-  destino_recurso?: string
-  data_repasse?: string
-  valor_repasse?: number
-  situacao_recurso?: string
-  observacoes?: string
 }
 
 export type UserRole = 'ADMIN' | 'GESTOR' | 'ANALISTA' | 'CONSULTA'

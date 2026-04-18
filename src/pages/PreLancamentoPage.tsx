@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
+import { isVisitorActive, getVisitorStore, updateVisitorStore } from '@/lib/visitor/visitorStorageManager'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -642,6 +643,16 @@ const PreLancamentoPage = () => {
   const fetchRecords = async () => {
     setIsLoadingRecords(true)
     try {
+      if (isVisitorActive()) {
+        const store = getVisitorStore()
+        if (store) {
+           setRecords(store.preLancamentos || [])
+        } else {
+           setRecords([])
+        }
+        return
+      }
+
       const { data, error } = await supabase
         .from('pre_lancamentos')
         .select('*')
@@ -663,29 +674,40 @@ const PreLancamentoPage = () => {
 
   const fetchPropostasOptions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('emendas')
-        .select('numero_proposta')
-        .not('numero_proposta', 'is', null)
-        .order('numero_proposta')
+      let validPropostas: string[] = []
 
-      if (error) throw error
+      if (isVisitorActive()) {
+         const store = getVisitorStore()
+         if (store) {
+           validPropostas = store.emendas
+             .map((e) => e.numero_proposta)
+             .filter((p) => p && p.trim() !== '') as string[]
+         }
+      } else {
+        const { data, error } = await supabase
+          .from('emendas')
+          .select('numero_proposta')
+          .not('numero_proposta', 'is', null)
+          .order('numero_proposta')
 
-      if (data) {
-        const validPropostas = data
-          .map((e) => e.numero_proposta)
-          .filter((p) => p && p.trim() !== '')
+        if (error) throw error
 
-        const uniquePropostas = Array.from(new Set(validPropostas))
-
-        setPropostasOptions(
-          uniquePropostas.map((p) => ({
-            id: p as string,
-            value: p as string,
-            label: p as string,
-          })),
-        )
+        if (data) {
+          validPropostas = data
+            .map((e) => e.numero_proposta)
+            .filter((p) => p && p.trim() !== '') as string[]
+        }
       }
+
+      const uniquePropostas = Array.from(new Set(validPropostas))
+
+      setPropostasOptions(
+        uniquePropostas.map((p) => ({
+          id: p,
+          value: p,
+          label: p,
+        })),
+      )
     } catch (error: any) {
       console.error('Error fetching propostas options:', error)
     }
@@ -827,6 +849,20 @@ const PreLancamentoPage = () => {
 
   const handleDeleteRecord = async (id: string) => {
     try {
+      if (isVisitorActive()) {
+        const store = getVisitorStore()
+        if (store) {
+          store.preLancamentos = (store.preLancamentos || []).filter(p => p.id !== id)
+          updateVisitorStore(store)
+          toast({
+            title: 'Registro removido',
+            description: 'A elaboração foi excluída com sucesso (Modo Visitante).',
+          })
+          fetchRecords()
+        }
+        return
+      }
+
       const { error } = await supabase
         .from('pre_lancamentos')
         .delete()
@@ -850,22 +886,33 @@ const PreLancamentoPage = () => {
   }
 
   const onSubmit = async (data: PreLancamentoFormValues) => {
-    if (!user) return
+    if (!user && !isVisitorActive()) return
     setIsSubmitting(true)
     try {
       // Validar duplicidade
-      let query = supabase
-        .from('pre_lancamentos')
-        .select('id')
-        .eq('numero_proposta', data.numero_proposta)
+      let existing = null
 
-      if (editingRecord) {
-        query = query.neq('id', editingRecord.id)
+      if (isVisitorActive()) {
+         const store = getVisitorStore()
+         if (store) {
+            existing = (store.preLancamentos || []).find(
+               p => p.numero_proposta === data.numero_proposta && (!editingRecord || p.id !== editingRecord.id)
+            )
+         }
+      } else {
+        let query = supabase
+          .from('pre_lancamentos')
+          .select('id')
+          .eq('numero_proposta', data.numero_proposta)
+
+        if (editingRecord) {
+          query = query.neq('id', editingRecord.id)
+        }
+
+        const { data: existingData, error: checkError } = await query.maybeSingle()
+        if (checkError) throw checkError
+        existing = existingData
       }
-
-      const { data: existing, error: checkError } = await query.maybeSingle()
-
-      if (checkError) throw checkError
 
       if (existing) {
         form.setError('numero_proposta', {
@@ -898,20 +945,42 @@ const PreLancamentoPage = () => {
       }
 
       if (editingRecord) {
-        const { error } = await supabase
-          .from('pre_lancamentos')
-          .update(payload)
-          .eq('id', editingRecord.id)
-        if (error) throw error
+        if (isVisitorActive()) {
+           const store = getVisitorStore()
+           if (store) {
+              store.preLancamentos = (store.preLancamentos || []).map(p => p.id === editingRecord.id ? { ...p, ...payload } : p)
+              updateVisitorStore(store)
+           }
+        } else {
+          const { error } = await supabase
+            .from('pre_lancamentos')
+            .update(payload)
+            .eq('id', editingRecord.id)
+          if (error) throw error
+        }
 
         toast({
           title: 'Alterações salvas!',
           description: 'A elaboração foi atualizada com sucesso.',
         })
       } else {
-        payload.created_by = user.id
-        const { error } = await supabase.from('pre_lancamentos').insert(payload)
-        if (error) throw error
+        payload.created_by = user?.id || 'visitante'
+        if (isVisitorActive()) {
+           const store = getVisitorStore()
+           if (store) {
+              const newPreLancamento = {
+                ...payload,
+                id: `visit-pre-${Date.now()}`,
+                codigo_sequencial: (store.preLancamentos || []).length + 1,
+                created_at: new Date().toISOString()
+              }
+              store.preLancamentos = [...(store.preLancamentos || []), newPreLancamento]
+              updateVisitorStore(store)
+           }
+        } else {
+          const { error } = await supabase.from('pre_lancamentos').insert(payload)
+          if (error) throw error
+        }
 
         toast({
           title: 'Elaboração salva!',

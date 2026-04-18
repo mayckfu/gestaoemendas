@@ -47,6 +47,9 @@ import { AuditReportTab } from '@/components/reports/AuditReportTab'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
+import { isVisitorActive } from '@/lib/visitor'
+import { visitorUpdateEmenda } from '@/lib/visitor'
+import { amendmentService } from '@/services/amendmentService'
 import { getSignedUrl } from '@/lib/supabase/storage'
 import { cn } from '@/lib/utils'
 
@@ -82,147 +85,26 @@ const EmendaDetailPage = () => {
       setError(null)
 
       try {
-        // Fetch core emenda
-        const { data: emenda, error: emendaError } = await supabase
-          .from('emendas')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle()
+        const { data, error } = await amendmentService.getById(id)
+        if (error) throw error
+        if (!data) throw new Error('Emenda não encontrada.')
 
-        if (emendaError) throw emendaError
-        if (!emenda) throw new Error('Emenda não encontrada.')
-
-        // Fetch related data
-        const { data: repasses, error: repassesError } = await supabase
-          .from('repasses')
-          .select('*')
-          .eq('emenda_id', id)
-        if (repassesError) throw repassesError
-
-        const { data: despesas, error: despesasError } = await supabase
-          .from('despesas')
-          .select('*, profiles:registrada_por(name)')
-          .eq('emenda_id', id)
-        if (despesasError) throw despesasError
-
-        const { data: anexos, error: anexosError } = await supabase
-          .from('anexos')
-          .select('*, profiles:uploader(name)')
-          .eq('emenda_id', id)
-        if (anexosError) throw anexosError
-
-        const { data: historico, error: historicoError } = await supabase
-          .from('historico')
-          .select('*, profiles:feito_por(name)')
-          .eq('emenda_id', id)
-          .order('criado_em', { ascending: false })
-        if (historicoError) throw historicoError
-
-        const { data: pendenciasData, error: pendenciasError } = await supabase
-          .from('pendencias')
-          .select('*')
-          .eq('emenda_id', id)
-        if (pendenciasError) throw pendenciasError
-
-        // Fetch Actions & Destinations
-        const { data: acoes, error: acoesError } = await supabase
-          .from('acoes_emendas')
-          .select('*')
-          .eq('emenda_id', id)
-        if (acoesError) throw acoesError
-
-        const acaoIds = (acoes || []).map((a: any) => a.id)
-        let destinacoes: any[] = []
-        if (acaoIds.length > 0) {
-          const { data: dests, error: destError } = await supabase
-            .from('destinacoes_recursos')
-            .select('*')
-            .in('acao_id', acaoIds)
-          if (destError) throw destError
-          destinacoes = dests || []
-        }
-
-        const mappedAcoes: ActionWithDestinations[] = (acoes || []).map(
-          (a: any) => ({
-            ...a,
-            destinacoes: destinacoes.filter((d: any) => d.acao_id === a.id),
-          }),
-        )
-
-        // Map other entities
-        const mappedDespesas = (despesas || []).map((d: any) => ({
-          ...d,
-          registrada_por: d.profiles?.name || 'Desconhecido',
-        }))
-
-        const mappedAnexos = await Promise.all(
-          (anexos || []).map(async (a: any) => {
+        // We still need to handle signed URLs for annexes in production
+        const annexesWithSignedUrls = await Promise.all(
+          data.anexos.map(async (a) => {
             let signedUrl = a.url
             if (a.url && !a.url.startsWith('http')) {
               const signed = await getSignedUrl(a.url)
               if (signed) signedUrl = signed
             }
-            return {
-              ...a,
-              filename: a.filename || a.titulo || 'Sem Nome',
-              url: signedUrl,
-              uploader: a.profiles?.name || 'Desconhecido',
-              data: a.data_documento || a.created_at,
-            }
+            return { ...a, url: signedUrl }
           }),
         )
 
-        const mappedHistorico = (historico || []).map((h: any) => ({
-          ...h,
-          feito_por: h.profiles?.name || 'Desconhecido',
-        }))
-
-        const mappedPendencias: Pendencia[] = (pendenciasData || []).map(
-          (p: any) => ({
-            id: p.id,
-            descricao: p.descricao,
-            dispensada: p.dispensada,
-            resolvida: p.resolvida,
-            justificativa: p.justificativa,
-            targetType: p.target_type,
-            targetId: p.target_id,
-          }),
-        )
-
-        const safeRepasses = repasses || []
-        const totalRepassado = safeRepasses.reduce(
-          (sum: number, r: any) =>
-            r.status === 'REPASSADO' ? sum + Number(r.valor || 0) : sum,
-          0,
-        )
-        const totalGasto = mappedDespesas.reduce(
-          (sum: number, d: any) => sum + Number(d.valor || 0),
-          0,
-        )
-
-        const detailedEmenda: DetailedAmendment = {
-          ...emenda,
-          tipo_recurso: emenda.tipo_recurso as TipoRecursoEnum,
-          repasses: safeRepasses as Repasse[],
-          despesas: mappedDespesas as Despesa[],
-          anexos: mappedAnexos as Anexo[],
-          historico: mappedHistorico as Historico[],
-          pendencias: mappedPendencias,
-          acoes: mappedAcoes,
-          total_repassado: totalRepassado,
-          total_gasto: totalGasto,
-          // Safe defaults for possibly null fields
-          descricao_completa: emenda.descricao_completa || '',
-          objeto_emenda: emenda.objeto_emenda || '',
-          portaria: emenda.portaria || null,
-          deliberacao_cie: emenda.deliberacao_cie || null,
-          observacoes: emenda.observacoes || '',
-        }
-
-        setEmendaData(detailedEmenda)
-      } catch (error: any) {
-        console.error('Error fetching emenda details:', error)
-        setError(error.message || 'Erro ao carregar detalhes.')
+        setEmendaData({ ...data, anexos: annexesWithSignedUrls as Anexo[] })
+      } catch (err: any) {
+        console.error('Error fetching amendment details:', err)
+        setError(err.message || 'Erro ao carregar detalhes da emenda')
         toast({
           title: 'Erro ao carregar detalhes',
           description: 'Não foi possível carregar os dados da emenda.',
@@ -232,13 +114,16 @@ const EmendaDetailPage = () => {
         if (showLoading) setIsLoading(false)
       }
     },
-    [id, toast],
+    [id, toast]
   )
 
   useEffect(() => {
     fetchEmendaDetails()
 
     if (!id) return
+
+    // Modo visitante: sem realtime subscription
+    if (isVisitorActive()) return
 
     const channel = supabase
       .channel('emenda-detail-changes')
@@ -280,6 +165,32 @@ const EmendaDetailPage = () => {
   const handleEmendaDataChange = async (updatedEmenda: DetailedAmendment) => {
     if (!canEdit || !emendaData) return
     try {
+      // Modo Visitante: grava no localStorage
+      if (isVisitorActive()) {
+        const result = visitorUpdateEmenda(emendaData.id, {
+          natureza: updatedEmenda.natureza,
+          objeto_emenda: updatedEmenda.objeto_emenda,
+          meta_operacional: updatedEmenda.meta_operacional,
+          destino_recurso: updatedEmenda.destino_recurso,
+          data_repasse: updatedEmenda.data_repasse,
+          valor_repasse: updatedEmenda.valor_repasse,
+          portaria: updatedEmenda.portaria,
+          deliberacao_cie: updatedEmenda.deliberacao_cie,
+          observacoes: updatedEmenda.observacoes,
+          descricao_completa: updatedEmenda.descricao_completa,
+          situacao: updatedEmenda.situacao,
+          status_interno: updatedEmenda.status_interno,
+          numero_proposta: updatedEmenda.numero_proposta,
+          segundo_autor: updatedEmenda.segundo_autor || null,
+          segundo_parlamentar: updatedEmenda.segundo_parlamentar || null,
+          valor_segundo_responsavel: updatedEmenda.valor_segundo_responsavel || null,
+        } as any)
+        if (result.error) throw new Error(result.error.message)
+        setEmendaData({ ...updatedEmenda })
+        toast({ title: 'Dados atualizados com sucesso! (Modo Visitante)' })
+        return
+      }
+
       const { error } = await supabase
         .from('emendas')
         .update({
@@ -293,8 +204,8 @@ const EmendaDetailPage = () => {
           deliberacao_cie: updatedEmenda.deliberacao_cie,
           observacoes: updatedEmenda.observacoes,
           descricao_completa: updatedEmenda.descricao_completa,
-          situacao: updatedEmenda.situacao,
-          status_interno: updatedEmenda.status_interno,
+          situacao: updatedEmenda.situacao as any,
+          status_interno: updatedEmenda.status_interno as any,
           numero_proposta: updatedEmenda.numero_proposta,
           segundo_autor: updatedEmenda.segundo_autor || null,
           segundo_parlamentar: updatedEmenda.segundo_parlamentar || null,

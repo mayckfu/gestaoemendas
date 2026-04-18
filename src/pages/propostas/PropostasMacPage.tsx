@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { supabase } from '@/lib/supabase/client'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { useYear } from '@/contexts/YearContext'
+import { isVisitorActive, getVisitorStore } from '@/lib/visitor/visitorStorageManager'
 
 const PropostasMacPage = () => {
   const navigate = useNavigate()
@@ -29,6 +30,19 @@ const PropostasMacPage = () => {
     const fetchMacAmendments = async () => {
       setIsLoading(true)
       try {
+        // ─── Modo Visitante ───────────────────────────────────────────────
+        if (isVisitorActive()) {
+          const store = getVisitorStore()
+          const emendas = (store?.emendas ?? []).filter((e) => {
+            const isMac = e.tipo_recurso === 'INCREMENTO_MAC' || e.tipo_recurso === 'CUSTEIO_MAC'
+            const yearMatch = !selectedYear || selectedYear === 'all' || e.ano_exercicio === parseInt(selectedYear)
+            return isMac && yearMatch
+          })
+          setMacAmendments(emendas as Amendment[])
+          return
+        }
+
+        // ─── Usuário real ─────────────────────────────────────────────────
         let query = supabase
           .from('emendas')
           .select('*')
@@ -40,10 +54,8 @@ const PropostasMacPage = () => {
         }
 
         const { data, error } = await query
-
         if (error) throw error
-
-        setMacAmendments(data as Amendment[])
+        setMacAmendments(data as any as Amendment[])
       } catch (error) {
         console.error('Error fetching MAC amendments:', error)
       } finally {

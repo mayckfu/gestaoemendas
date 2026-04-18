@@ -15,6 +15,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useYear } from '@/contexts/YearContext'
+import { isVisitorActive } from '@/lib/visitor'
+import { amendmentService } from '@/services/amendmentService'
+import { dashboardService } from '@/services/dashboardService'
 
 const Index = () => {
   const { toast } = useToast()
@@ -26,13 +29,10 @@ const Index = () => {
   const [isRefetching, setIsRefetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [amendments, setAmendments] = useState<Amendment[]>([])
-  const [detailedAmendments, setDetailedAmendments] = useState<
-    DetailedAmendment[]
-  >([])
+  const [detailedAmendments, setDetailedAmendments] = useState<DetailedAmendment[]>([])
   const [limitData, setLimitData] = useState<any>(null)
 
   const [searchParams, setSearchParams] = useSearchParams()
-
   const selectedMonth = searchParams.get('month') || 'all'
 
   const setSelectedMonth = (month: string) => {
@@ -47,7 +47,8 @@ const Index = () => {
 
   const fetchData = useCallback(
     async (forceLoading = false) => {
-      if (!session && !isAuthenticated) return
+      // ─── Guard check for online mode ────────────────────────────────
+      if (!isVisitorActive() && (!session && !isAuthenticated)) return
 
       if (forceLoading) setIsLoading(true)
       else setIsRefetching(true)
@@ -55,128 +56,24 @@ const Index = () => {
       setError(null)
 
       try {
-        let query = supabase.from('emendas').select('*')
-
-        if (selectedYear && selectedYear !== 'all') {
-          query = query.eq('ano_exercicio', parseInt(selectedYear))
-        }
-
-        const limitQuery = (supabase as any)
-          .from('limites_exercicio')
-          .select('*')
-          .eq(
-            'ano',
-            parseInt(selectedYear || new Date().getFullYear().toString()),
-          )
-          .maybeSingle()
-
-        const [emendasRes, limitDataRes] = await Promise.all([
-          query,
-          limitQuery,
+        const [detailedRes, limitRes] = await Promise.all([
+          amendmentService.getDetailedAmendments(selectedYear),
+          dashboardService.getLimits(selectedYear || new Date().getFullYear().toString())
         ])
 
-        if (emendasRes.error) {
-          if (
-            emendasRes.error.code === '42501' ||
-            emendasRes.error.message.includes('policy')
-          ) {
-            throw new Error(
-              'Acesso negado. Você não tem permissão para visualizar estes dados.',
-            )
-          }
-          throw emendasRes.error
-        }
+        if (detailedRes.error) throw detailedRes.error
 
-        setLimitData(limitDataRes.data || null)
-        const emendasData = emendasRes.data
-
-        if (!emendasData || emendasData.length === 0) {
-          setAmendments([])
-          setDetailedAmendments([])
-          setIsLoading(false)
-          setIsRefetching(false)
-          return
-        }
-
-        const emendaIds = emendasData.map((e) => e.id)
-
-        const [repassesRes, despesasRes, anexosRes, pendenciasRes] =
-          await Promise.all([
-            supabase.from('repasses').select('*').in('emenda_id', emendaIds),
-            supabase
-              .from('despesas')
-              .select('*, profiles:registrada_por(name)')
-              .in('emenda_id', emendaIds),
-            supabase
-              .from('anexos')
-              .select('*, profiles:uploader(name)')
-              .in('emenda_id', emendaIds),
-            supabase.from('pendencias').select('*').in('emenda_id', emendaIds),
-          ])
-
-        if (repassesRes.error) throw repassesRes.error
-        if (despesasRes.error) throw despesasRes.error
-        if (anexosRes.error) throw anexosRes.error
-        if (pendenciasRes.error) throw pendenciasRes.error
-
-        const repassesData = repassesRes.data || []
-        const despesasData = despesasRes.data || []
-        const anexosData = anexosRes.data || []
-        const pendenciasData = pendenciasRes.data || []
-
-        const detailed: DetailedAmendment[] = (emendasData || []).map(
-          (emenda: any) => {
-            const emendaRepasses = repassesData.filter(
-              (r: any) => r.emenda_id === emenda.id,
-            )
-            const emendaDespesas = despesasData.filter(
-              (d: any) => d.emenda_id === emenda.id,
-            )
-            const emendaAnexos = anexosData.filter(
-              (a: any) => a.emenda_id === emenda.id,
-            )
-            const emendaPendencias = pendenciasData
-              .filter((p: any) => p.emenda_id === emenda.id)
-              .map((p: any) => ({
-                id: p.id,
-                descricao: p.descricao,
-                dispensada: p.dispensada,
-                resolvida: p.resolvida,
-                justificativa: p.justificativa,
-                targetType: p.target_type,
-                targetId: p.target_id,
-              }))
-
-            const mappedDespesas = emendaDespesas.map((d: any) => ({
-              ...d,
-              registrada_por: d.profiles?.name || 'Desconhecido',
-            }))
-
-            const mappedAnexos = emendaAnexos.map((a: any) => ({
-              ...a,
-              uploader: a.profiles?.name || 'Desconhecido',
-            }))
-
-            return {
-              ...emenda,
-              repasses: emendaRepasses,
-              despesas: mappedDespesas,
-              anexos: mappedAnexos,
-              historico: [],
-              pendencias: emendaPendencias as Pendencia[],
-            }
-          },
-        )
-
-        setAmendments(emendasData as Amendment[])
-        setDetailedAmendments(detailed)
-      } catch (error: any) {
-        console.error('Error fetching dashboard data:', error)
-        setError(error.message || 'Erro ao carregar dados.')
+        const detailedData = detailedRes.data || []
+        setDetailedAmendments(detailedData)
+        // Set amendments state from the detailed data to maintain sync
+        setAmendments(detailedData)
+        setLimitData(limitRes.data || null)
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err.message || 'Erro ao carregar dados do dashboard')
         toast({
           title: 'Erro de conexão',
-          description:
-            error.message || 'Não foi possível carregar os dados do painel.',
+          description: 'Não foi possível carregar os dados. Verifique sua conexão.',
           variant: 'destructive',
         })
       } finally {
@@ -184,35 +81,26 @@ const Index = () => {
         setIsRefetching(false)
       }
     },
-    [selectedYear, session, isAuthenticated, toast],
+    [selectedYear, session, isAuthenticated, toast]
   )
 
   useEffect(() => {
+    // Modo visitante: carrega dados imediatamente
+    if (isVisitorActive()) {
+      fetchData(true)
+      return
+    }
+
+    // Usuário real: aguarda autenticação
     if (isAuthenticated) {
       fetchData(true)
 
       const channel = supabase
         .channel('dashboard-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'emendas' },
-          () => fetchData(),
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'repasses' },
-          () => fetchData(),
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'despesas' },
-          () => fetchData(),
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'limites_exercicio' },
-          () => fetchData(),
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'emendas' }, () => fetchData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'repasses' }, () => fetchData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'despesas' }, () => fetchData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'limites_exercicio' }, () => fetchData())
         .subscribe()
 
       return () => {
@@ -255,25 +143,27 @@ const Index = () => {
   }, [amendments, detailedAmendments, selectedMonth])
 
   const consumedTotals = useMemo(() => {
-    const mac = amendments
+    // Use detailedAmendments to ensure we have all properties needed
+    const mac = detailedAmendments
       .filter(
         (a) =>
           a.tipo_recurso === 'INCREMENTO_MAC' ||
           a.tipo_recurso === 'CUSTEIO_MAC',
       )
       .reduce((sum, a) => sum + a.valor_total, 0)
-    const pap = amendments
+    const pap = detailedAmendments
       .filter(
         (a) =>
           a.tipo_recurso === 'INCREMENTO_PAP' ||
           a.tipo_recurso === 'CUSTEIO_PAP',
       )
       .reduce((sum, a) => sum + a.valor_total, 0)
-    const capital = amendments
+    const capital = detailedAmendments
       .filter((a) => a.tipo_recurso === 'EQUIPAMENTO')
       .reduce((sum, a) => sum + a.valor_total, 0)
+
     return { mac, pap, capital }
-  }, [amendments])
+  }, [detailedAmendments])
 
   const dashboardData = useMemo(() => {
     const {
@@ -283,7 +173,10 @@ const Index = () => {
     } = periodFilteredData
 
     const totalValor = fAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    const totalGasto = fDespesas.reduce((sum, d) => sum + d.valor, 0)
+    // Synchronized 'Executed' value: only Liquidated/Paid expenses
+    const totalGasto = fDespesas
+      .filter(d => d.status_execucao === 'LIQUIDADA' || d.status_execucao === 'PAGA')
+      .reduce((sum, d) => sum + d.valor, 0)
     const activeLegislators = new Set(fAmendments.map((a) => a.parlamentar))
       .size
 
@@ -415,8 +308,7 @@ const Index = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2
-              className="text-xl font-semibold text-asplan-deep flex items-center gap-2 animate-fade-in opacity-0"
-              style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
+              className="text-xl font-semibold text-asplan-deep flex items-center gap-2 animate-fade-in"
             >
               <Banknote className="h-5 w-5" />
               Resumo Financeiro

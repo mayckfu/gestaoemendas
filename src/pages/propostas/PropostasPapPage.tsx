@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { supabase } from '@/lib/supabase/client'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { useYear } from '@/contexts/YearContext'
+import { isVisitorActive, getVisitorStore } from '@/lib/visitor/visitorStorageManager'
 
 const PropostasPapPage = () => {
   const navigate = useNavigate()
@@ -29,6 +30,19 @@ const PropostasPapPage = () => {
     const fetchPapAmendments = async () => {
       setIsLoading(true)
       try {
+        // ─── Modo Visitante ───────────────────────────────────────────────
+        if (isVisitorActive()) {
+          const store = getVisitorStore()
+          const emendas = (store?.emendas ?? []).filter((e) => {
+            const isPap = e.tipo_recurso === 'INCREMENTO_PAP' || e.tipo_recurso === 'CUSTEIO_PAP'
+            const yearMatch = !selectedYear || selectedYear === 'all' || e.ano_exercicio === parseInt(selectedYear)
+            return isPap && yearMatch
+          })
+          setPapAmendments(emendas as Amendment[])
+          return
+        }
+
+        // ─── Usuário real ─────────────────────────────────────────────────
         let query = supabase
           .from('emendas')
           .select('*')
@@ -40,10 +54,8 @@ const PropostasPapPage = () => {
         }
 
         const { data, error } = await query
-
         if (error) throw error
-
-        setPapAmendments(data as Amendment[])
+        setPapAmendments(data as any as Amendment[])
       } catch (error) {
         console.error('Error fetching PAP amendments:', error)
       } finally {

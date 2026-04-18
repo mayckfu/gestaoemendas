@@ -29,6 +29,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
+import { VisitorLoginButton } from '@/components/auth/VisitorLoginButton'
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -366,6 +367,11 @@ const LoginPage = () => {
                   </Button>
                 </form>
               </Form>
+            </div>
+
+            {/* Visitor Mode Access */}
+            <div className="relative z-10 px-2 pb-2">
+              <VisitorLoginButton />
             </div>
           </div>
 

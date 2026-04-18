@@ -32,6 +32,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -69,6 +70,16 @@ const ProfilePage = () => {
     if (!user) return
     setIsLoading(true)
     try {
+      if (isVisitorActive()) {
+        // Simulamos o update no modo visitante
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        toast({
+          title: 'Perfil atualizado',
+          description: 'Suas informações foram salvas com sucesso (Modo Visitante).',
+        })
+        return
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({

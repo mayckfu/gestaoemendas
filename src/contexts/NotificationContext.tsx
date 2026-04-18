@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from './AuthContext'
 import { useToast } from '@/components/ui/use-toast'
+import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 
 export type Notification = {
   id: string
@@ -44,6 +45,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       return
     }
 
+    if (isVisitorActive()) {
+      setNotifications([]) // No notifications for visitor mode, or add mock notifications if desired
+      setLoading(false)
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -64,7 +71,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchNotifications()
 
-    if (user) {
+    if (user && !isVisitorActive()) {
       const channel = supabase
         .channel('public:notifications')
         .on(
@@ -102,6 +109,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, [user, fetchNotifications, toast])
 
   const markAsRead = async (id: string) => {
+    if (isVisitorActive()) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      )
+      return
+    }
+
     try {
       // Optimistic update
       setNotifications((prev) =>
@@ -127,6 +141,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   const markAllAsRead = async () => {
     if (!user) return
+
+    if (isVisitorActive()) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      return
+    }
 
     try {
       const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id)

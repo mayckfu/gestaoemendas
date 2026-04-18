@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/contexts/AuthContext'
+import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 
 interface SecurityNotification {
   id: string
@@ -25,6 +27,12 @@ export const SecurityNotifications = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      if (isVisitorActive()) {
+        setNotifications([])
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       const { data, error } = await supabase
         .from('security_notifications')
@@ -40,6 +48,8 @@ export const SecurityNotifications = () => {
     }
 
     fetchNotifications()
+
+    if (isVisitorActive()) return
 
     // Subscribe to new notifications
     const subscription = supabase
@@ -68,6 +78,11 @@ export const SecurityNotifications = () => {
   }, [toast])
 
   const markAsRead = async (id: string) => {
+    if (isVisitorActive()) {
+      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
+      return
+    }
+
     const { error } = await supabase
       .from('security_notifications')
       .update({ read: true })
@@ -83,6 +98,11 @@ export const SecurityNotifications = () => {
   const markAllAsRead = async () => {
     const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id)
     if (unreadIds.length === 0) return
+
+    if (isVisitorActive()) {
+      setNotifications(notifications.map(n => ({ ...n, read: true })))
+      return
+    }
 
     const { error } = await supabase
       .from('security_notifications')

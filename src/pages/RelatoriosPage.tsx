@@ -12,8 +12,10 @@ import {
   DetailedAmendment,
   TipoRecurso,
   SituacaoOficial,
+  Pendencia,
 } from '@/lib/mock-data'
-import { supabase } from '@/lib/supabase/client'
+import { isVisitorActive } from '@/lib/visitor'
+import { amendmentService } from '@/services/amendmentService'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -91,85 +93,11 @@ const RelatoriosPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
+
       try {
-        let query = supabase.from('emendas').select('*')
-        if (selectedYear && selectedYear !== 'all') {
-          query = query.eq('ano_exercicio', parseInt(selectedYear))
-        }
-
-        const { data: emendas, error: emendasError } = await query
-        if (emendasError) throw emendasError
-
-        if (!emendas || emendas.length === 0) {
-          setAllData([])
-          setIsLoading(false)
-          return
-        }
-
-        const emendaIds = emendas.map((e: any) => e.id)
-
-        // Fetch related data
-        const { data: despesas, error: despesasError } = await supabase
-          .from('despesas')
-          .select('*, profiles:registrada_por(name)')
-          .in('emenda_id', emendaIds)
-        if (despesasError) throw despesasError
-
-        const { data: repasses, error: repassesError } = await supabase
-          .from('repasses')
-          .select('*')
-          .in('emenda_id', emendaIds)
-        if (repassesError) throw repassesError
-
-        // Fetch Actions and Destinations
-        const { data: acoes, error: acoesError } = await supabase
-          .from('acoes_emendas')
-          .select('*')
-          .in('emenda_id', emendaIds)
-        if (acoesError) throw acoesError
-
-        const acaoIds = acoes.map((a: any) => a.id)
-        let destinacoes: any[] = []
-        if (acaoIds.length > 0) {
-          const { data: dests, error: destError } = await supabase
-            .from('destinacoes_recursos')
-            .select('*')
-            .in('acao_id', acaoIds)
-          if (destError) throw destError
-          destinacoes = dests
-        }
-
-        const detailed: DetailedAmendment[] = (emendas || []).map((e: any) => {
-          const emendaDespesas = (despesas || [])
-            .filter((d: any) => d.emenda_id === e.id)
-            .map((d: any) => ({
-              ...d,
-              registrada_por: d.profiles?.name || 'Desconhecido',
-            }))
-
-          const emendaRepasses = (repasses || []).filter(
-            (r: any) => r.emenda_id === e.id,
-          )
-
-          const emendaAcoes = (acoes || [])
-            .filter((a: any) => a.emenda_id === e.id)
-            .map((a: any) => ({
-              ...a,
-              destinacoes: destinacoes.filter((d: any) => d.acao_id === a.id),
-            }))
-
-          return {
-            ...e,
-            despesas: emendaDespesas,
-            repasses: emendaRepasses,
-            acoes: emendaAcoes,
-            anexos: [],
-            historico: [],
-            pendencias: [],
-          }
-        })
-
-        setAllData(detailed)
+        const { data, error } = await amendmentService.getDetailedAmendments(selectedYear)
+        if (error) throw error
+        setAllData(data || [])
       } catch (error) {
         console.error('Error fetching report data:', error)
       } finally {

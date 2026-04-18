@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand Palette - Gov Blue */
+    --brand-50: 204 100% 97%; /* #f0f9ff */
+    --brand-100: 204 94% 94%; /* #e0f2fe */
+    --brand-200: 204 86% 88%; /* #bae6fd */
+    --brand-300: 204 90% 81%; /* #7dd3fc */
+    --brand-400: 204 94% 68%; /* #38bdf8 */
+    --brand-500: 199 89% 48%; /* #0ea5e9 - Using close match to #0095da for tailwind scale compatibility or explicit def */
+    /* Custom Gov Colors for CSS Vars */
+    --gov-blue-primary: 200 100% 43%; /* #0095da */
+    --gov-blue-dark: 216 100% 32%; /* #005ea2 */
+
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%; /* Neutral 800 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    --primary: var(--gov-blue-dark);
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: var(--gov-blue-primary);
+
+    --radius: 0.75rem;
+
+    /* Chart Colors */
+    --chart-1: 221.2 83.2% 53.3%; /* Blue */
+    --chart-2: 262.1 83.3% 57.8%; /* Violet */
+    --chart-3: 346.8 77.2% 49.8%; /* Rose */
+    --chart-4: 142.1 76.2% 36.3%; /* Emerald */
+    --chart-5: 24.6 95% 53.1%; /* Orange */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium tracking-tight;
+  }
+}
+
+@layer utilities {
+  .bg-gov-gradient {
+    background: linear-gradient(135deg, #0095da 0%, #005ea2 100%);
+  }
+
+  .shadow-soft {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .shadow-card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .shadow-float {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .glass-card {
+    @apply rounded-2xl border border-border/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)] bg-background/60 backdrop-blur-xl transition-all duration-500 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)];
+  }
+}
