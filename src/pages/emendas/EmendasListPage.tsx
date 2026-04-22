@@ -866,19 +866,45 @@ const EmendasListPage = () => {
                             )}
                           </span>
                         </div>
-                        <div className="mt-3 flex gap-2">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-normal"
-                          >
-                            {amendment.numero_emenda}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-normal"
-                          >
-                            {TipoEmenda[amendment.tipo]}
-                          </Badge>
+                        <div className="mt-3 flex justify-between items-center">
+                          <div className="flex gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-normal"
+                            >
+                              {amendment.numero_emenda}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-normal"
+                            >
+                              {TipoEmenda[amendment.tipo]}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            {canEdit && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                                onClick={() => handleEdit(amendment)}
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                onClick={() => handleDelete(amendment)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Excluir</span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
