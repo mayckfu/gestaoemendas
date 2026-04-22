@@ -38,10 +38,10 @@ export const AppSidebar = () => {
 
   const navLinks = [
     { href: '/', label: 'Dashboard', icon: Home, visible: true },
-    { href: '/emendas', label: 'Emendas', icon: FileText, visible: true },
+    { href: '/emendas', label: 'Emendas Federais', icon: FileText, visible: true },
     {
       href: '/quadro-estadual',
-      label: 'Quadro Estadual',
+      label: 'Emendas Estaduais',
       icon: Map,
       visible: true,
     },

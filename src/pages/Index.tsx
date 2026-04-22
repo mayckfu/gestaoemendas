@@ -273,7 +273,7 @@ const Index = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight text-asplan-deep flex items-center gap-3">
-              Dashboard — Exercício{' '}
+              Painel Analítico das Emendas Parlamentares — Exercício{' '}
               {selectedYear === 'all' ? 'Todos' : selectedYear}
               {isRefetching && (
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
