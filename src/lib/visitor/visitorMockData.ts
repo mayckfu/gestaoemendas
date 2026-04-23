@@ -601,77 +601,47 @@ export const VISITOR_PRE_LANCAMENTOS = [
 
 // ─── Repasses por emenda ─────────────────────────────────────────────────────
 export const VISITOR_REPASSES: Record<string, Repasse[]> = {
-  'emenda-001': [
-    { id: 'rep-001-a', data: '2025-10-01', valor: 24112360.00, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB049930', observacoes: 'Valor total repassado.' },
-  ],
-  'emenda-003': [
-    { id: 'rep-003-a', data: '2025-08-20', valor: 1200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB041120', observacoes: 'Repasse único.' },
-  ],
-  'emenda-005': [
-    { id: 'rep-005-a', data: '2025-12-10', valor: 2500000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB058870', observacoes: 'Repasse integral autorizado.' },
-  ],
-  'emenda-006': [
-    { id: 'rep-006-a', data: '2025-06-15', valor: 890000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB035100', observacoes: 'Parcela única — custeio MAC.' },
-  ],
-  'emenda-007': [
-    { id: 'rep-007-a', data: '2025-12-20', valor: 2100000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB060200', observacoes: 'Primeira parcela — incremento MAC.' },
-    { id: 'rep-007-b', data: '2026-01-10', valor: 2100000, fonte: 'FNS/MS', status: 'PENDENTE', observacoes: 'Segunda parcela aguardando liberação.' },
-  ],
-  'emenda-008': [
-    { id: 'rep-008-a', data: '2025-11-05', valor: 1054000.00, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB054500', observacoes: 'Repasse para aquisição de equipamentos.' },
-  ],
-  'emenda-010': [
-    { id: 'rep-010-a', data: '2026-02-01', valor: 1550000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB002100', observacoes: 'Primeira parcela PAP.' },
-    { id: 'rep-010-b', data: '2026-03-01', valor: 1550000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB004300', observacoes: 'Segunda parcela PAP.' },
-  ],
-  'emenda-011': [
-    { id: 'rep-011-a', data: '2026-03-10', valor: 1800000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB005500', observacoes: 'Repasse integral custeio MAC.' },
-  ],
-  'emenda-021': [{ id: 'rep-021-a', data: '2025-04-10', valor: 3200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB123456', observacoes: 'Repasse integral' }],
-  'emenda-022': [{ id: 'rep-022-a', data: '2025-05-15', valor: 1850000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB123457', observacoes: 'Repasse integral' }],
-  'emenda-023': [{ id: 'rep-023-a', data: '2025-07-20', valor: 1200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB123458', observacoes: 'Primeira parcela' }],
-  'emenda-025': [{ id: 'rep-025-a', data: '2025-10-05', valor: 5100000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB123459', observacoes: 'Repasse integral' }],
-  'emenda-026': [{ id: 'rep-026-a', data: '2026-02-10', valor: 3600000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB123460', observacoes: 'Repasse integral' }],
-  'emenda-027': [{ id: 'rep-027-a', data: '2026-03-15', valor: 1050000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB123461', observacoes: 'Primeira parcela' }],
-  'emenda-013': [{ id: 'rep-013-a', data: '2025-04-10', valor: 24811360.00, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB123456', observacoes: 'Valor total repassado' }],
-  'emenda-030': [{ id: 'rep-030-a', data: '2026-04-20', valor: 6200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2026OB123462', observacoes: 'Repasse integral' }],
+  'emenda-001': [{ id: 'rep-001-a', data: '2025-06-10', valor: 24112360, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00100', observacoes: 'Repasse integral simulado' }],
+  'emenda-002': [{ id: 'rep-002-a', data: '2025-06-10', valor: 1054000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00200', observacoes: 'Repasse integral simulado' }],
+  'emenda-003': [{ id: 'rep-003-a', data: '2025-06-10', valor: 1200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00300', observacoes: 'Repasse integral simulado' }],
+  'emenda-005': [{ id: 'rep-005-a', data: '2025-06-10', valor: 2500000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00500', observacoes: 'Repasse integral simulado' }],
+  'emenda-006': [{ id: 'rep-006-a', data: '2025-06-10', valor: 890000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00600', observacoes: 'Repasse integral simulado' }],
+  'emenda-007': [{ id: 'rep-007-a', data: '2025-06-10', valor: 2100000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00700', observacoes: 'Repasse integral simulado' }],
+  'emenda-008': [{ id: 'rep-008-a', data: '2025-06-10', valor: 1500000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB00800', observacoes: 'Repasse integral simulado' }],
+  'emenda-010': [{ id: 'rep-010-a', data: '2025-06-10', valor: 3100000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01000', observacoes: 'Repasse integral simulado' }],
+  'emenda-011': [{ id: 'rep-011-a', data: '2025-06-10', valor: 1800000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01100', observacoes: 'Repasse integral simulado' }],
+  'emenda-013': [{ id: 'rep-013-a', data: '2025-06-10', valor: 24811360, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01300', observacoes: 'Repasse integral simulado' }],
+  'emenda-014': [{ id: 'rep-014-a', data: '2025-06-10', valor: 2200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01400', observacoes: 'Repasse integral simulado' }],
+  'emenda-015': [{ id: 'rep-015-a', data: '2025-06-10', valor: 1650000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01500', observacoes: 'Repasse integral simulado' }],
+  'emenda-017': [{ id: 'rep-017-a', data: '2025-06-10', valor: 4100000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01700', observacoes: 'Repasse integral simulado' }],
+  'emenda-019': [{ id: 'rep-019-a', data: '2025-06-10', valor: 1875000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB01900', observacoes: 'Repasse integral simulado' }],
+  'emenda-021': [{ id: 'rep-021-a', data: '2025-06-10', valor: 3200000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB02100', observacoes: 'Repasse integral simulado' }],
+  'emenda-022': [{ id: 'rep-022-a', data: '2025-06-10', valor: 1850000, fonte: 'FNS/MS', status: 'REPASSADO', ordem_bancaria: '2025OB02200', observacoes: 'Repasse integral simulado' }],
 }
 
 // ─── Despesas por emenda ─────────────────────────────────────────────────────
 export const VISITOR_DESPESAS: Record<string, Despesa[]> = {
-  'emenda-001': [
-    { id: 'desp-001-a', destinacao_id: 'dest-001-a', data: '2025-11-01', valor: 24112360.00, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Contratação de empresa para atenção integral à saúde da mulher', fornecedor_nome: 'Instituto Saúde Integrada Ltda', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS CONJUNTO ESPERANÇA', status_execucao: 'PAGA' },
-  ],
-  'emenda-003': [
-    { id: 'desp-003-a', destinacao_id: 'dest-003-a', data: '2025-09-05', valor: 980000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Serviços de custeio MAC — atendimento ambulatorial especializado', fornecedor_nome: 'Hospital Regional Norte S/A', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'HOSPITAL DISTRITAL GONZAGA MOTA', status_execucao: 'LIQUIDADA' },
-  ],
-  'emenda-005': [
-    { id: 'desp-005-a', data: '2026-01-05', valor: 700000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Procedimentos de média complexidade — ortopedia', fornecedor_nome: 'Clínica Orto-Saúde Ltda', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'POLICLÍNICA CENTRAL', status_execucao: 'LIQUIDADA' },
-    { id: 'desp-005-b', data: '2026-01-20', valor: 400000, categoria: 'MATERIAL DE CONSUMO', descricao: 'Material ortopédico e próteses', fornecedor_nome: 'OrthoMed Distribuidora', registrada_por: 'user-002', unidade_destino: 'ALMOXARIFADO CENTRAL', status_execucao: 'EMPENHADA' },
-  ],
-  'emenda-002': [
-    { id: 'desp-002-a', data: '2025-08-10', valor: 1054000.00, categoria: 'EQUIPAMENTOS', descricao: 'Equipamentos de diagnóstico por imagem', fornecedor_nome: 'MedEquip Brasil S.A.', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'HOSPITAL MUNICIPAL', status_execucao: 'PAGA' },
-  ],
-  'emenda-007': [
-    { id: 'desp-007-a', data: '2026-01-15', valor: 1500000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Contratação de leitos de UTI neonatal', fornecedor_nome: 'Hospital Maternidade Esperança', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'MATERNIDADE CENTRAL', status_execucao: 'LIQUIDADA' },
-  ],
-  'emenda-008': [
-    { id: 'desp-008-a', data: '2025-12-01', valor: 750000, categoria: 'EQUIPAMENTOS', descricao: 'Aquisição de 3 aparelhos de ultrassom portátil', fornecedor_nome: 'TechMed Importação Ltda', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS ESPERANÇA', status_execucao: 'PAGA' },
-  ],
-  'emenda-010': [
-    { id: 'desp-010-a', data: '2026-02-20', valor: 1200000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Programa de atenção primária — equipes ESF', fornecedor_nome: 'Cooperativa Saúde da Família', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'COORDENAÇÃO PAP', status_execucao: 'LIQUIDADA' },
-    { id: 'desp-010-b', data: '2026-03-10', valor: 1000000, categoria: 'MATERIAL DE CONSUMO', descricao: 'Insumos para vacinação e imunização', fornecedor_nome: 'Distribuidora Nacional de Vacinas', registrada_por: 'user-002', unidade_destino: 'ALMOXARIFADO CENTRAL', status_execucao: 'EMPENHADA' },
-  ],
-  'emenda-011': [
-    { id: 'desp-011-a', data: '2026-03-15', valor: 600000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Custeio de serviços ambulatoriais MAC', fornecedor_nome: 'Policlínica Regional Sul', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'POLICLÍNICA SUL', status_execucao: 'LIQUIDADA' },
-  ],
-  'emenda-021': [{ id: 'desp-021-a', destinacao_id: 'dest-021-a', data: '2025-05-10', valor: 3000000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Custeio', fornecedor_nome: 'Fornecedor A', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-022': [{ id: 'desp-022-a', destinacao_id: 'dest-022-a', data: '2025-06-15', valor: 1600000, categoria: 'MATERIAL DE CONSUMO', descricao: 'Insumos', fornecedor_nome: 'Fornecedor B', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-023': [{ id: 'desp-023-a', destinacao_id: 'dest-023-a', data: '2025-08-20', valor: 950000, categoria: 'EQUIPAMENTOS', descricao: 'Equipamentos', fornecedor_nome: 'Fornecedor C', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-025': [{ id: 'desp-025-a', destinacao_id: 'dest-025-a', data: '2025-11-05', valor: 4800000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Custeio', fornecedor_nome: 'Fornecedor D', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-026': [{ id: 'desp-026-a', destinacao_id: 'dest-026-a', data: '2026-03-10', valor: 3200000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Custeio', fornecedor_nome: 'Fornecedor E', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-027': [{ id: 'desp-027-a', destinacao_id: 'dest-027-a', data: '2026-04-15', valor: 750000, categoria: 'MATERIAL DE CONSUMO', descricao: 'Insumos', fornecedor_nome: 'Fornecedor F', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
-  'emenda-030': [{ id: 'desp-030-a', destinacao_id: 'dest-030-a', data: '2026-05-20', valor: 5800000, categoria: 'SERVIÇOS TERCEIROS (PJ)', descricao: 'Custeio', fornecedor_nome: 'Fornecedor G', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
+  'emenda-001': [{ id: 'desp-001-a', destinacao_id: 'dest-001-a', data: '2025-08-15', valor: 24112360, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-002': [{ id: 'desp-002-a', destinacao_id: 'dest-002-a', data: '2025-08-15', valor: 1054000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-003': [{ id: 'desp-003-a', destinacao_id: 'dest-003-a', data: '2025-08-15', valor: 980000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-005': [{ id: 'desp-005-a', destinacao_id: 'dest-005-a', data: '2025-08-15', valor: 1100000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-006': [{ id: 'desp-006-a', destinacao_id: 'dest-006-a', data: '2025-08-15', valor: 890000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-007': [{ id: 'desp-007-a', destinacao_id: 'dest-007-a', data: '2025-08-15', valor: 1500000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-008': [{ id: 'desp-008-a', destinacao_id: 'dest-008-a', data: '2025-08-15', valor: 750000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-010': [{ id: 'desp-010-a', destinacao_id: 'dest-010-a', data: '2025-08-15', valor: 2200000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-011': [{ id: 'desp-011-a', destinacao_id: 'dest-011-a', data: '2025-08-15', valor: 600000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-013': [{ id: 'desp-013-a', destinacao_id: 'dest-013-a', data: '2025-08-15', valor: 24811360, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-014': [{ id: 'desp-014-a', destinacao_id: 'dest-014-a', data: '2025-08-15', valor: 920000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-015': [{ id: 'desp-015-a', destinacao_id: 'dest-015-a', data: '2025-08-15', valor: 730000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-017': [{ id: 'desp-017-a', destinacao_id: 'dest-017-a', data: '2025-08-15', valor: 3300000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-019': [{ id: 'desp-019-a', destinacao_id: 'dest-019-a', data: '2025-08-15', valor: 890000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-021': [{ id: 'desp-021-a', destinacao_id: 'dest-021-a', data: '2025-08-15', valor: 3000000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-022': [{ id: 'desp-022-a', destinacao_id: 'dest-022-a', data: '2025-08-15', valor: 1600000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-023': [{ id: 'desp-023-a', destinacao_id: 'dest-023-a', data: '2025-08-15', valor: 950000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-025': [{ id: 'desp-025-a', destinacao_id: 'dest-025-a', data: '2025-11-05', valor: 4800000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-026': [{ id: 'desp-026-a', destinacao_id: 'dest-026-a', data: '2026-03-10', valor: 3200000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-027': [{ id: 'desp-027-a', destinacao_id: 'dest-027-a', data: '2026-04-15', valor: 750000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor Simulado', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UNIDADE SAUDE LOCAL', status_execucao: 'PAGA' }],
+  'emenda-030': [{ id: 'desp-030-a', destinacao_id: 'dest-030-a', data: '2026-05-20', valor: 5800000, categoria: 'SERVICOS TERCEIROS (PJ)', descricao: 'Execucao de custeio/equipamento', fornecedor_nome: 'Fornecedor G', registrada_por: 'user-002', autorizada_por: 'user-001', unidade_destino: 'UBS', status_execucao: 'PAGA' }],
 }
 
 // ─── Pendências por emenda ───────────────────────────────────────────────────

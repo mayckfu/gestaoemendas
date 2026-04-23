@@ -122,8 +122,12 @@ const Index = () => {
     }
 
     const periodFilteredAmendments = amendments
-    const allRepasses = detailedAmendments.flatMap((a) => a.repasses)
-    const allDespesas = detailedAmendments.flatMap((a) => a.despesas)
+    const allRepasses = detailedAmendments.flatMap((a) =>
+      a.repasses.map((r) => ({ ...r, emenda_id: a.id }))
+    )
+    const allDespesas = detailedAmendments.flatMap((a) =>
+      a.despesas.map((d) => ({ ...d, emenda_id: a.id }))
+    )
 
     const periodFilteredRepasses = allRepasses.filter((r) =>
       filterByMonth(r.data),

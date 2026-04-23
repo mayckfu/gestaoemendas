@@ -429,7 +429,7 @@ const EmendasListPage = () => {
       if (editingEmenda) {
         const { error } = await supabase
           .from('emendas')
-          .update(data)
+          .update(data as any)
           .eq('id', editingEmenda.id)
 
         if (error) throw error
@@ -443,13 +443,13 @@ const EmendasListPage = () => {
       } else {
         const { data: newData, error } = await supabase
           .from('emendas')
-          .insert([data])
+          .insert([data as any])
           .select()
           .single()
 
         if (error) throw error
 
-        setLocalAmendments((prev) => [newData as Amendment, ...prev])
+        setLocalAmendments((prev) => [{ total_repassado: 0, total_gasto: 0, ...newData } as Amendment, ...prev])
         toast({ title: 'Emenda criada com sucesso!' })
       }
       setIsFormOpen(false)
@@ -610,10 +610,8 @@ const EmendasListPage = () => {
     // Sorting
     if (sortConfig.key) {
       result.sort((a, b) => {
-        // @ts-expect-error
-        const valA = a[sortConfig.key]
-        // @ts-expect-error
-        const valB = b[sortConfig.key]
+        const valA = a[sortConfig.key as keyof typeof a]
+        const valB = b[sortConfig.key as keyof typeof b]
 
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1

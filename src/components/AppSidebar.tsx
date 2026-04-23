@@ -37,7 +37,7 @@ export const AppSidebar = () => {
     new Date().getFullYear().toString()
 
   const navLinks = [
-    { href: '/', label: 'Dashboard', icon: Home, visible: true },
+    { href: '/', label: 'Painel Analítico', icon: Home, visible: true },
     { href: '/emendas', label: 'Emendas Federais', icon: FileText, visible: true },
     {
       href: '/quadro-estadual',

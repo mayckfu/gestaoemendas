@@ -97,6 +97,7 @@ export type Amendment = {
 
 export type Repasse = {
   id: string
+  emenda_id?: string
   data: string
   valor: number
   fonte: string
@@ -108,6 +109,7 @@ export type Repasse = {
 
 export type Despesa = {
   id: string
+  emenda_id?: string
   data: string
   valor: number
   categoria: string
