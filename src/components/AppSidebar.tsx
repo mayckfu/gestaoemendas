@@ -4,7 +4,6 @@ import {
   FileText,
   BarChart2,
   Settings,
-  Building2,
   LogOut,
   Map,
   Calculator,
@@ -94,8 +93,13 @@ export const AppSidebar = () => {
       {/* Header with Brand Color */}
       <SidebarHeader className="h-20 flex items-center justify-start border-b border-white/10 bg-brand-700 px-4 shrink-0 transition-all duration-300">
         <div className="flex items-center gap-3 overflow-hidden w-full">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white shadow-sm backdrop-blur-sm">
-            <Building2 className="h-6 w-6" />
+          {/* Logo da prefeitura/sistema */}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm overflow-hidden">
+            <img
+              src="/logo.png"
+              alt="Logo Gestão Emendas"
+              className="h-9 w-9 object-contain"
+            />
           </div>
           {isExpanded && (
             <div className="flex flex-col text-white animate-fade-in">
