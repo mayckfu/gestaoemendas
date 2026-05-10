@@ -1,5 +1,5 @@
 
-Este projeto foi criado de ponta a ponta com o [Skip](https://goskip.dev).
+# Gestão de Emendas Parlamentares
 
 ## 🚀 Stack Tecnológica
 

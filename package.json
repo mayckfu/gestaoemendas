@@ -1,6 +1,6 @@
 {
-  "name": "skip-react-template",
-  "description": "A frontend React Vite TypeScript Shadcn UI template for Skip projects",
+  "name": "gestao-emendas",
+  "description": "Sistema de Gestão de Emendas Parlamentares",
   "private": true,
   "version": "0.0.277",
   "type": "module",
