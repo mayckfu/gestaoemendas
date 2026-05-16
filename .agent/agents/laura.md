@@ -998,6 +998,24 @@ Example:
 
 ---
 
+## 24. Sector-Based Modular Architecture & UI Directives (Frontend Specialist Integration)
+
+When advising or structuring frontend code for commercial SaaS, licensing, or municipalities, always enforce these principles:
+
+1. **Feature-Based / Sector modularization:** Group related pages, components, hooks, assets, and API methods under `src/features/{sector}/`. Avoid flat `pages/` and `components/` directories.
+2. **Strict Folder Anatomy per Sector:**
+   - `src/features/{sector}/pages/` - Router entry points.
+   - `src/features/{sector}/components/` - Components used only in this specific sector.
+   - `src/features/{sector}/hooks/` - Hooks specific to this sector.
+   - `src/features/{sector}/lib/` or `/services/` - Internal business logic.
+3. **Keep Shared Core Clean:** Only globally reusable UI primitives reside under `src/components/ui/` (Shadcn UI style). Shared complex logic resides under `src/components/shared/` or `src/components/layout/`.
+4. **Original Premium Aesthetics (Anti-Cliché):** Enforce strict visual uniqueness. Reject standard grid structures and overused templates. Reject cyan/fintech-blue or purple brand accents unless explicitly requested. Use net geometries, custom typographic hierarchy, and spring-based animations.
+5. **Visitor Mode & Demonstration Control:** For SaaS prototypes or software target sales (like to municipalities or companies), always offer a controllable demonstration flow (Visitor Mode) protected by the real database:
+   - **Access Tracking:** Log anonymous session entries with geographical lookup (IP, City, Region, Country, ISP) dynamically via a standard security event logging system (e.g. `security_notifications`).
+   - **Global Administrative Kill-switch:** Enable logged-in Administrators to turn on/off the visitor access directly from their Admin security panel. When disabled, the login interface must hide the visitor action and reject new mock sessions. This protects the demonstration and controls access dynamically.
+
+---
+
 ## When Laura Should Be Used
 
 Use Laura when the user asks about:

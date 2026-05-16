@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase/client'
 import {
   VISITOR_EMENDAS,
   VISITOR_USERS,
@@ -76,4 +77,90 @@ export function clearVisitorData(): void {
 
 export function isVisitorActive(): boolean {
   return localStorage.getItem(TIMESTAMP_KEY) !== null && !checkExpiration()
+}
+
+/**
+ * Detecta o IP e a localização geográfica do visitante e salva no Supabase via security_notifications
+ */
+export async function logVisitorAccess(): Promise<void> {
+  try {
+    const res = await fetch('https://ipapi.co/json/')
+    if (res.ok) {
+      const data = await res.json()
+      const ip = data.ip || 'Desconhecido'
+      const city = data.city || 'Desconhecida'
+      const region = data.region || 'Desconhecida'
+      const country = data.country_name || 'Desconhecido'
+      const org = data.org || 'Desconhecido'
+      
+      const message = `Acesso ao Modo Visitante iniciado. IP: ${ip} | Localização: ${city}, ${region} (${country}) | Provedor: ${org}`
+      
+      await supabase.rpc('log_security_notification', {
+        p_type: 'VISITOR_ACCESS',
+        p_message: message,
+        p_severity: 'INFO',
+        p_user_id: null
+      })
+    } else {
+      throw new Error('IPAPI Response not ok')
+    }
+  } catch (err) {
+    console.error('Erro ao buscar localização do visitante:', err)
+    try {
+      await supabase.rpc('log_security_notification', {
+        p_type: 'VISITOR_ACCESS',
+        p_message: 'Acesso ao Modo Visitante iniciado (Geolocalização indisponível ou bloqueada pelo navegador).',
+        p_severity: 'INFO',
+        p_user_id: null
+      })
+    } catch (dbErr) {
+      console.error('Erro ao persistir notificação de segurança simplificada:', dbErr)
+    }
+  }
+}
+
+/**
+ * Consulta a tabela system_settings para verificar se o modo visitante está ativado
+ */
+export async function isVisitorModeGloballyEnabled(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'visitor_mode_enabled')
+      .maybeSingle()
+
+    if (error || !data) {
+      // Se a tabela ainda não existir ou der algum erro (ex: migração não rodou), padrão é true
+      return true
+    }
+
+    return (data.value as any) === true
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Atualiza o status ativo/inativo do modo visitante na tabela system_settings (apenas admin logado conseguirá sucesso)
+ */
+export async function setVisitorModeGloballyEnabled(enabled: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'visitor_mode_enabled',
+        value: enabled as any,
+        updated_at: new Date().toISOString()
+      })
+
+    if (error) {
+      console.error('Erro ao atualizar configuração de visitante:', error.message)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Erro de conexão ao salvar configuração de visitante:', err)
+    return false
+  }
 }
