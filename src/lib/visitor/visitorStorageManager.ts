@@ -146,7 +146,23 @@ export async function isVisitorModeGloballyEnabled(): Promise<boolean> {
  */
 export async function setVisitorModeGloballyEnabled(enabled: boolean): Promise<boolean> {
   try {
-    const { error } = await supabase
+    // Tenta primeiro um UPDATE simples (muito mais seguro contra RLS restritos e conflito de chave primária)
+    const { data, error } = await supabase
+      .from('system_settings')
+      .update({
+        value: enabled as any,
+        updated_at: new Date().toISOString()
+      })
+      .eq('key', 'visitor_mode_enabled')
+      .select()
+
+    // Se o update funcionou e atualizou uma linha, retorna sucesso
+    if (!error && data && data.length > 0) {
+      return true
+    }
+
+    // Se falhou ou não encontrou a linha (ex: banco sem a linha semeada), tenta o UPSERT de fallback
+    const { error: upsertError } = await supabase
       .from('system_settings')
       .upsert({
         key: 'visitor_mode_enabled',
@@ -154,8 +170,8 @@ export async function setVisitorModeGloballyEnabled(enabled: boolean): Promise<b
         updated_at: new Date().toISOString()
       })
 
-    if (error) {
-      console.error('Erro ao atualizar configuração de visitante:', error.message)
+    if (upsertError) {
+      console.error('Erro ao atualizar configuração de visitante (upsert):', upsertError.message)
       return false
     }
     return true
