@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Edit2, Save, X, FileText } from 'lucide-react'
+import { Edit2, Save, X, FileText, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ExpandableText } from '@/components/ui/expandable-text'
 
 interface EmendaObjetoFinalidadeProps {
   description: string | null | undefined
-  onSave: (description: string) => void
+  onSave: (description: string) => Promise<void> | void
 }
 
 export const EmendaObjetoFinalidade = ({
@@ -18,6 +18,7 @@ export const EmendaObjetoFinalidade = ({
   const { checkPermission } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(description || '')
+  const [isSaving, setIsSaving] = useState(false)
 
   const canEdit = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
 
@@ -25,9 +26,14 @@ export const EmendaObjetoFinalidade = ({
     setText(description || '')
   }, [description])
 
-  const handleSave = () => {
-    onSave(text)
-    setIsEditing(false)
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      await onSave(text)
+      setIsEditing(false)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleCancel = () => {
@@ -59,11 +65,12 @@ export const EmendaObjetoFinalidade = ({
         )}
         {isEditing && (
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>
               <X className="h-4 w-4 mr-2" /> Cancelar
             </Button>
-            <Button size="sm" onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {isSaving ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
         )}
@@ -73,7 +80,8 @@ export const EmendaObjetoFinalidade = ({
           <Textarea
             value={text || ''}
             onChange={(e) => setText(e.target.value)}
-            className="min-h-[150px] font-normal leading-relaxed resize-y"
+            disabled={isSaving}
+            className="min-h-[150px] font-normal leading-relaxed resize-y disabled:opacity-50"
             placeholder="Descreva detalhadamente o objeto e a finalidade desta emenda..."
           />
         ) : (

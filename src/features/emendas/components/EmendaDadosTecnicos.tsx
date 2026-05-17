@@ -11,6 +11,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { DetailedAmendment, TipoEmenda, TipoRecurso } from '@/lib/mock-data'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Edit2, Save, X, Info } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
@@ -18,6 +25,24 @@ import { MoneyInput } from '@/components/ui/money-input'
 import { cn, formatCurrencyBRL } from '@/lib/utils'
 import { formatDisplayDate } from '@/lib/date-utils'
 import { ExpandableText } from '@/components/ui/expandable-text'
+
+const NATUREZAS_DESPESA = [
+  { value: '33.90.30 - Material de Consumo', label: '33.90.30 - Material de Consumo' },
+  { value: '33.90.39 - Serviços de Terceiros PJ', label: '33.90.39 - Serviços de Terceiros PJ' },
+  { value: '33.90.52 - Equipamentos e Material Permanente', label: '33.90.52 - Equipamentos e Material Permanente' },
+  { value: '44.90.51 - Obras e Instalações', label: '44.90.51 - Obras e Instalações' },
+  { value: '33.90.36 - Outros Serviços de Terceiros PF', label: '33.90.36 - Outros Serviços de Terceiros PF' },
+  { value: '33.90.32 - Material de Distribuição Gratuita', label: '33.90.32 - Material de Distribuição Gratuita' },
+  { value: 'Múltiplas Naturezas', label: 'Múltiplas Naturezas' },
+]
+
+const getNaturezaPadrao = (tipoRecurso?: string): string => {
+  if (!tipoRecurso) return ''
+  if (tipoRecurso === 'EQUIPAMENTO') return '33.90.52 - Equipamentos e Material Permanente'
+  if (tipoRecurso === 'CUSTEIO_MAC' || tipoRecurso === 'CUSTEIO_PAP') return '33.90.39 - Serviços de Terceiros PJ'
+  if (tipoRecurso === 'INCREMENTO_MAC' || tipoRecurso === 'INCREMENTO_PAP') return '33.90.30 - Material de Consumo'
+  return ''
+}
 
 interface EmendaDadosTecnicosProps {
   emenda: DetailedAmendment
@@ -159,12 +184,21 @@ export const EmendaDadosTecnicos = forwardRef<
               </div>
               <div className="space-y-2">
                 <Label htmlFor="natureza">Natureza da Despesa</Label>
-                <Input
-                  id="natureza"
-                  value={formData.natureza || ''}
-                  onChange={(e) => handleChange('natureza', e.target.value)}
-                  placeholder="Ex: 33.90.30"
-                />
+                <Select
+                  value={formData.natureza || getNaturezaPadrao(formData.tipo_recurso)}
+                  onValueChange={(val) => handleChange('natureza', val)}
+                >
+                  <SelectTrigger id="natureza">
+                    <SelectValue placeholder="Selecione a natureza..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NATUREZAS_DESPESA.map((n) => (
+                      <SelectItem key={n.value} value={n.value}>
+                        {n.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="meta_operacional">Meta Operacional</Label>

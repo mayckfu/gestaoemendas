@@ -47,7 +47,7 @@ export const AuditCategories = {
 } as const
 
 export const TipoEmenda = {
-  individual: 'Individual',
+  individual: 'Emenda Parlamentar',
   bancada: 'Bancada',
   comissao: 'Comissão',
   programa: 'Programa',

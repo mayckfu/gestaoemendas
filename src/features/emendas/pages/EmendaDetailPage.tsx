@@ -460,12 +460,12 @@ const EmendaDetailPage = () => {
           />
           <EmendaObjetoFinalidade
             description={emendaData.descricao_completa || ''}
-            onSave={(desc) =>
-              handleEmendaDataChange({
+            onSave={async (desc) => {
+              await handleEmendaDataChange({
                 ...emendaData,
                 descricao_completa: desc,
               })
-            }
+            }}
           />
         </TabsContent>
 

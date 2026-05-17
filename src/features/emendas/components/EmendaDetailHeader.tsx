@@ -84,7 +84,7 @@ export const EmendaDetailHeader = ({
                   className="bg-primary/10 text-primary hover:bg-primary/20 border-transparent"
                 >
                   {emenda.tipo === 'individual'
-                    ? 'Recurso Individual'
+                    ? 'Emenda Parlamentar'
                     : emenda.tipo === 'bancada'
                       ? 'Recurso de Bancada'
                       : emenda.tipo === 'comissao'
@@ -128,7 +128,7 @@ export const EmendaDetailHeader = ({
                 </Badge>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                   {emenda.tipo === 'individual'
-                    ? 'Recurso Individual'
+                    ? 'Emenda Parlamentar'
                     : emenda.tipo === 'bancada'
                       ? 'Recurso de Bancada'
                       : emenda.tipo === 'comissao'

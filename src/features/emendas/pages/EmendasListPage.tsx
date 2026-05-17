@@ -270,6 +270,27 @@ const EmendasListPage = () => {
 
   useEffect(() => {
     fetchAmendments()
+
+    if (isVisitorActive()) return
+
+    const channel = supabase
+      .channel('emendas_list_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'emendas',
+        },
+        () => {
+          fetchAmendments()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [fetchAmendments])
 
   useEffect(() => {
