@@ -124,7 +124,7 @@ export async function logVisitorAccess(): Promise<void> {
  */
 export async function isVisitorModeGloballyEnabled(): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('system_settings')
       .select('value')
       .eq('key', 'visitor_mode_enabled')
@@ -147,7 +147,7 @@ export async function isVisitorModeGloballyEnabled(): Promise<boolean> {
 export async function setVisitorModeGloballyEnabled(enabled: boolean): Promise<boolean> {
   try {
     // Tenta primeiro um UPDATE simples (muito mais seguro contra RLS restritos e conflito de chave primária)
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('system_settings')
       .update({
         value: enabled as any,
@@ -162,7 +162,7 @@ export async function setVisitorModeGloballyEnabled(enabled: boolean): Promise<b
     }
 
     // Se falhou ou não encontrou a linha (ex: banco sem a linha semeada), tenta o UPSERT de fallback
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await (supabase as any)
       .from('system_settings')
       .upsert({
         key: 'visitor_mode_enabled',
