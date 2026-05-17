@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -38,6 +39,7 @@ const App = () => (
                 <NotificationProvider>
                   <Toaster />
                   <Sonner />
+                  <SpeedInsights />
                   <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route
