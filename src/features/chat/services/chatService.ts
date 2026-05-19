@@ -20,7 +20,7 @@ type EmendaRow = Pick<
 // Em producao, o ideal e mover esta chamada para uma Supabase Edge Function
 // para nao expor a chave da IA no bundle do navegador.
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim()
-const geminiModel = import.meta.env.VITE_GEMINI_MODEL?.trim() || 'gemini-2.5-flash'
+const geminiModel = import.meta.env.VITE_GEMINI_MODEL?.trim() || 'gemini-1.5-flash'
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
 function formatCurrency(value: number | null) {
