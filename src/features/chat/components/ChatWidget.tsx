@@ -103,11 +103,10 @@ export function ChatWidget() {
               className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                  msg.isBot
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${msg.isBot
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
                     : 'bg-primary text-primary-foreground'
-                }`}
+                  }`}
               >
                 {msg.text}
               </div>
