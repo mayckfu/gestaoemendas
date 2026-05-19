@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
     outDir: mode === 'development' ? 'dev-dist' : 'dist',
     minify: mode !== 'development',
     sourcemap: mode === 'development',
+    chunkSizeWarningLimit: 2500,
     rolldownOptions: {
       onwarn(warning, warn) {
         if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
