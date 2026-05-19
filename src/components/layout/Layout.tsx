@@ -5,6 +5,7 @@ import { SidebarProvider, useSidebar } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import { SessionTimeout } from '@/components/SessionTimeout'
 import { VisitorBanner } from './VisitorBanner'
+import { ChatWidget } from '@/features/chat/components/ChatWidget'
 
 const AppLayout = () => {
   const { state, isMobile } = useSidebar()
@@ -30,6 +31,7 @@ const AppLayout = () => {
           </div>
         </main>
       </div>
+      <ChatWidget />
     </div>
   )
 }
