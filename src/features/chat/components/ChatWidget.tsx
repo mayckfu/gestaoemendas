@@ -41,7 +41,7 @@ export function ChatWidget() {
     setIsLoading(true)
 
     try {
-      const responseText = await chatService.sendMessage(userMsg.text)
+      const responseText = await chatService.sendMessage(userMsg.text, messages)
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,
