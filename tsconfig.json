@@ -15,5 +15,7 @@
     "allowJs": true,
     "strictNullChecks": true,
     "skipLibCheck": true
-  }
+  },
+  "exclude": ["supabase"]
 }
+
