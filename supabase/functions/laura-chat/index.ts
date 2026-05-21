@@ -11,6 +11,8 @@ interface ChatHistoryMessage {
 
 interface RequestBody {
   message: string
+  // history from frontend is no longer strictly needed since we fetch from DB,
+  // but we keep it in interface for compatibility.
   history?: ChatHistoryMessage[]
 }
 
@@ -148,7 +150,7 @@ function formatSummary(emendas: any[]) {
 }
 
 function formatConversationHistory(history: ChatHistoryMessage[] = []) {
-  const relevantHistory = history.slice(-8)
+  const relevantHistory = history.slice(-10) // fetch up to 10 latest interactions
 
   if (!relevantHistory.length) {
     return 'Sem mensagens anteriores nesta conversa.'
@@ -319,7 +321,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Missing Authorization header')
     }
 
-    const { message, history = [] } = (await req.json()) as RequestBody
+    const { message } = (await req.json()) as RequestBody
 
     if (!message) {
       throw new Error('Message is required')
@@ -334,6 +336,38 @@ Deno.serve(async (req: Request) => {
         },
       }
     )
+
+    // Authenticate and get user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      throw new Error('Unauthorized')
+    }
+    const userId = user.id
+
+    // Fetch conversation history from database
+    const { data: dbHistory, error: historyError } = await supabaseClient
+      .from('laura_conversations')
+      .select('role, content')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (historyError) {
+      console.error('Error fetching history:', historyError)
+    }
+
+    // Prepare history for prompt (oldest first)
+    const recentHistory = (dbHistory || []).reverse().map(h => ({
+      text: h.content,
+      isBot: h.role === 'assistant'
+    }))
+
+    // Save user's new message to DB
+    await supabaseClient.from('laura_conversations').insert({
+      user_id: userId,
+      role: 'user',
+      content: message.trim(),
+    })
 
     const { data: emendas, error: emendasError } = await supabaseClient
       .from('emendas')
@@ -352,7 +386,7 @@ Deno.serve(async (req: Request) => {
       ? contextData.join('\n')
       : 'Nenhuma emenda foi retornada pelo Supabase para esta sessao. Se o usuario perguntar por dados especificos, informe que nao ha dados disponiveis no momento.'
     const summaryContext = emendas?.length ? formatSummary(emendas) : 'Sem resumo disponivel.'
-    const conversationHistory = formatConversationHistory(history)
+    const conversationHistory = formatConversationHistory(recentHistory)
 
     const systemPrompt = `Voce e a Laura, uma assistente virtual especialista em gestao publica e emendas parlamentares do sistema.
 Seu papel e ajudar gestores a entender prioridades, riscos, valores, status e proximas acoes das emendas.
@@ -378,7 +412,7 @@ HISTORICO RECENTE DA CONVERSA:
 ${conversationHistory}
 `
 
-    // Build provider chain: Gemini → OpenRouter → Groq
+    // Build provider chain: Gemini -> OpenRouter -> Groq
     const providers: AIProvider[] = []
 
     const gemini = createGeminiProvider()
@@ -399,6 +433,14 @@ ${conversationHistory}
       systemPrompt,
       message.trim(),
     )
+
+    // Save Laura's response to DB
+    await supabaseClient.from('laura_conversations').insert({
+      user_id: userId,
+      role: 'assistant',
+      content: responseText,
+      provider: usedProvider,
+    })
 
     return new Response(JSON.stringify({ text: responseText, provider: usedProvider }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -28,6 +28,35 @@ function toFriendlyError(error: unknown) {
 }
 
 export const chatService = {
+  async fetchHistory(): Promise<ChatHistoryMessage[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      const { data, error } = await supabase
+        .from('laura_conversations')
+        .select('id, role, content, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Error fetching chat history:', error)
+        return []
+      }
+
+      // Reverse so oldest is first
+      return (data || []).reverse().map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isBot: msg.role === 'assistant',
+      }))
+    } catch (error) {
+      console.error('Error in fetchHistory:', error)
+      return []
+    }
+  },
+
   async sendMessage(message: string, history: ChatHistoryMessage[] = []): Promise<string> {
     try {
       const { data, error } = await supabase.functions.invoke('laura-chat', {

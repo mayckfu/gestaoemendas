@@ -25,6 +25,25 @@ export function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Carrega historico inicial
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const history = await chatService.fetchHistory()
+        if (history.length > 0) {
+          // Keep the greeting message, then append history
+          setMessages(prev => [
+            prev[0],
+            ...history
+          ])
+        }
+      } catch (err) {
+        console.error('Error loading history', err)
+      }
+    }
+    loadHistory()
+  }, [])
+
   // Auto-scroll para a ultima mensagem
   useEffect(() => {
     if (scrollRef.current) {
