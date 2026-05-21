@@ -80,7 +80,7 @@ const AdminPage = () => {
           changed_by: log.profiles?.name || 'Sistema',
         })) as AuditLog[],
       )
-      setConfigYears(yearsData as ConfiguracaoAno[])
+      setConfigYears(yearsData as unknown as ConfiguracaoAno[])
     } catch (error: any) {
       console.error('Error fetching admin data:', error.message)
       setError(error.message || 'Erro ao carregar dados administrativos.')

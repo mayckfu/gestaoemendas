@@ -54,7 +54,7 @@ export const GlobalSearch = ({
         }
 
         e.preventDefault()
-        onOpenChange((open) => !open)
+        onOpenChange(!open)
       }
     }
 
