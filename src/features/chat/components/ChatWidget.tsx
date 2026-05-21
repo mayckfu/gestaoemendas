@@ -32,9 +32,14 @@ export function ChatWidget() {
         const history = await chatService.fetchHistory()
         if (history.length > 0) {
           // Keep the greeting message, then append history
+          const formattedHistory: Message[] = history.map((msg, index) => ({
+            id: msg.id || `history-${index}`,
+            text: msg.text,
+            isBot: msg.isBot
+          }))
           setMessages(prev => [
             prev[0],
-            ...history
+            ...formattedHistory
           ])
         }
       } catch (err) {

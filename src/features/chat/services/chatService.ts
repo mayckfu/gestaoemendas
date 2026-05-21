@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 
 export interface ChatHistoryMessage {
+  id?: string
   text: string
   isBot: boolean
 }
@@ -34,7 +35,7 @@ export const chatService = {
       if (!user) return []
 
       const { data, error } = await supabase
-        .from('laura_conversations')
+        .from('laura_conversations' as any)
         .select('id, role, content, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
