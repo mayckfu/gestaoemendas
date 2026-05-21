@@ -12,9 +12,7 @@ import {
   DetailedAmendment,
   TipoRecurso,
   SituacaoOficial,
-  Pendencia,
 } from '@/lib/mock-data'
-import { isVisitorActive } from '@/lib/visitor'
 import { amendmentService } from '@/services/amendmentService'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

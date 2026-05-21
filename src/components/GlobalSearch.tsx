@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Search, Loader2, FileText, Hash } from 'lucide-react'
+import { Loader2, FileText, Hash } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useDebounce } from '@/hooks/use-debounce'
 import { formatCurrencyBRL } from '@/lib/utils'

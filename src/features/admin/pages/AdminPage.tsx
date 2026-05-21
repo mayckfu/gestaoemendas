@@ -196,7 +196,7 @@ const AdminPage = () => {
 
       setUsers((prev) => prev.filter((u) => u.id !== userId))
       toast({ title: 'Usuário excluído com sucesso.' })
-    } catch (error: any) {
+    } catch (_error: any) {
       toast({
         title: 'Erro ao excluir usuário',
         description:

@@ -8,7 +8,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Historico } from '@/lib/mock-data'
-import { cn } from '@/lib/utils'
 
 interface EmendaHistoricoTabProps {
   historico: Historico[]

@@ -16,15 +16,10 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DetailedAmendment,
-  Despesa,
   Anexo,
   Pendencia,
-  Repasse,
   StatusInternoEnum,
   SituacaoOficialEnum,
-  Historico,
-  ActionWithDestinations,
-  TipoRecursoEnum,
 } from '@/lib/mock-data'
 import { EmendaDetailHeader } from '@/features/emendas/components/EmendaDetailHeader'
 import {

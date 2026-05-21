@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import { parseISO, getMonth, format } from 'date-fns'
 import { Banknote, Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
-import { DetailedAmendment, Amendment, Pendencia } from '@/lib/mock-data'
+import { DetailedAmendment, Amendment } from '@/lib/mock-data'
 import { PendingItemsSidebar } from '@/features/dashboard/components/PendingItemsSidebar'
 import { FinancialSummary } from '@/features/dashboard/components/FinancialSummary'
 import { supabase } from '@/lib/supabase/client'
@@ -12,7 +12,7 @@ import { MonthlyFinancialChart } from '@/features/dashboard/components/MonthlyFi
 import { ParliamentaryDistributionChart } from '@/features/dashboard/components/ParliamentaryDistributionChart'
 import { OfficialLimitCard } from '@/features/dashboard/components/OfficialLimitCard'
 import { useToast } from '@/components/ui/use-toast'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useYear } from '@/contexts/YearContext'
 import { isVisitorActive } from '@/lib/visitor'
@@ -21,7 +21,6 @@ import { dashboardService } from '@/services/dashboardService'
 
 const Index = () => {
   const { toast } = useToast()
-  const navigate = useNavigate()
   const { session, isAuthenticated, isAdmin } = useAuth()
   const { selectedYear, setSelectedYear } = useYear()
 

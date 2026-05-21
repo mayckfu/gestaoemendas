@@ -133,7 +133,7 @@ export const UsersTable = ({
       return
     }
 
-    const { password, confirmPassword, ...userData } = data
+    const { password, confirmPassword: _confirmPassword, ...userData } = data
 
     if (editingUser) {
       const updatedUser = { ...editingUser, ...userData }

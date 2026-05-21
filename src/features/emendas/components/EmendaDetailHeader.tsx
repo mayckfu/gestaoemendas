@@ -15,7 +15,7 @@ import {
   CreditCard,
   FileText,
 } from 'lucide-react'
-import { formatCurrencyBRL, formatPercent, cn } from '@/lib/utils'
+import { formatCurrencyBRL, formatPercent } from '@/lib/utils'
 import {
   Select,
   SelectContent,

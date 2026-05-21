@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
-import { useAuth } from '@/contexts/AuthContext'
 import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 
 interface SecurityNotification {

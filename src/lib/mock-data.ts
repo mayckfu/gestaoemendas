@@ -234,7 +234,7 @@ export type AuditLog = {
 }
 
 export const getAmendmentDetails = (
-  id: string,
+  _id: string,
 ): DetailedAmendment | undefined => {
   return undefined
 }

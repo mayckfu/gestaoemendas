@@ -56,20 +56,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    const handleActivity = () => {
-      // Only reset automatically if NOT in warning state
-      // If in warning state, user must explicitly confirm via dialog
-      if (!isWarning) {
-        // We debounce the state update slightly to avoid excessive re-renders on mousemove
-        // But since we are updating a countdown, we can just reset a ref and have the interval check it?
-        // To strictly follow the "Visual Session Countdown" requirement, the timer must visually reset.
-        // So we call resetTimer.
-        // However, updating state on every mousemove is bad.
-        // Let's rely on a throttle mechanism or just check lastActivity timestamp.
-        // But the user wants to see the countdown reset.
-        // So we'll use a throttled reset.
-      }
-    }
+
 
     // Implementing throttled reset
     let throttleTimeout: NodeJS.Timeout | null = null
