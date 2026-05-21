@@ -14,6 +14,11 @@ interface RequestBody {
   history?: ChatHistoryMessage[]
 }
 
+interface AIProvider {
+  name: string
+  call: (systemPrompt: string, userMessage: string) => Promise<string>
+}
+
 function formatCurrency(value: number | null) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -154,6 +159,155 @@ function formatConversationHistory(history: ChatHistoryMessage[] = []) {
     .join('\n')
 }
 
+// --- AI Provider Implementations ---
+
+function createGeminiProvider(): AIProvider | null {
+  const apiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
+  if (!apiKey) return null
+
+  const model = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-2.5-flash'
+
+  return {
+    name: 'Gemini',
+    async call(systemPrompt: string, userMessage: string): Promise<string> {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userMessage }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              temperature: 0.35,
+              topP: 0.9,
+              maxOutputTokens: 1200,
+            },
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Gemini ${response.status}: ${errorText}`)
+      }
+
+      const result = await response.json()
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) throw new Error('Gemini returned empty response')
+      return text
+    },
+  }
+}
+
+function createOpenRouterProvider(): AIProvider | null {
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY')?.trim()
+  if (!apiKey) return null
+
+  return {
+    name: 'OpenRouter',
+    async call(systemPrompt: string, userMessage: string): Promise<string> {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? 'https://gestao-emendas.app',
+          'X-Title': 'Laura - Gestao de Emendas',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.1-8b-instruct:free',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.35,
+          top_p: 0.9,
+          max_tokens: 1200,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`OpenRouter ${response.status}: ${errorText}`)
+      }
+
+      const result = await response.json()
+      const text = result.choices?.[0]?.message?.content
+      if (!text) throw new Error('OpenRouter returned empty response')
+      return text
+    },
+  }
+}
+
+function createGroqProvider(): AIProvider | null {
+  const apiKey = Deno.env.get('GROQ_API_KEY')?.trim()
+  if (!apiKey) return null
+
+  return {
+    name: 'Groq',
+    async call(systemPrompt: string, userMessage: string): Promise<string> {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.35,
+          top_p: 0.9,
+          max_tokens: 1200,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Groq ${response.status}: ${errorText}`)
+      }
+
+      const result = await response.json()
+      const text = result.choices?.[0]?.message?.content
+      if (!text) throw new Error('Groq returned empty response')
+      return text
+    },
+  }
+}
+
+async function callWithFallback(
+  providers: AIProvider[],
+  systemPrompt: string,
+  userMessage: string,
+): Promise<{ text: string; provider: string }> {
+  const errors: string[] = []
+
+  for (const provider of providers) {
+    try {
+      console.log(`[Laura] Trying provider: ${provider.name}`)
+      const text = await provider.call(systemPrompt, userMessage)
+      console.log(`[Laura] Success with provider: ${provider.name}`)
+      return { text, provider: provider.name }
+    } catch (error: any) {
+      const msg = `${provider.name} failed: ${error.message}`
+      console.warn(`[Laura] ${msg}`)
+      errors.push(msg)
+    }
+  }
+
+  console.error(`[Laura] All providers failed:`, errors)
+  throw new Error(
+    'Nao consegui acessar a IA agora. Os dados do sistema continuam disponiveis, ' +
+    'mas a analise automatica esta temporariamente indisponivel. ' +
+    'Tente novamente em alguns instantes.'
+  )
+}
+
+// --- Main Handler ---
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -171,20 +325,16 @@ Deno.serve(async (req: Request) => {
       throw new Error('Message is required')
     }
 
-    // Initialize User-Scoped Supabase Client to respect RLS!
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: {
-            Authorization: authHeader,
-          },
+          headers: { Authorization: authHeader },
         },
       }
     )
 
-    // Fetch emendas (increased to 1000 records, ordered by ano_exercicio desc)
     const { data: emendas, error: emendasError } = await supabaseClient
       .from('emendas')
       .select(
@@ -192,7 +342,6 @@ Deno.serve(async (req: Request) => {
       )
       .order('ano_exercicio', { ascending: false })
       .limit(1000)
-
 
     if (emendasError) {
       console.error('Error fetching emendas:', emendasError)
@@ -229,52 +378,29 @@ HISTORICO RECENTE DA CONVERSA:
 ${conversationHistory}
 `
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
-    const geminiModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-2.5-flash'
+    // Build provider chain: Gemini → OpenRouter → Groq
+    const providers: AIProvider[] = []
 
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is not configured in Supabase Secrets')
+    const gemini = createGeminiProvider()
+    if (gemini) providers.push(gemini)
+
+    const openRouter = createOpenRouterProvider()
+    if (openRouter) providers.push(openRouter)
+
+    const groq = createGroqProvider()
+    if (groq) providers.push(groq)
+
+    if (providers.length === 0) {
+      throw new Error('Nenhum provedor de IA esta configurado. Configure pelo menos GEMINI_API_KEY nos Secrets do Supabase.')
     }
 
-    // Call Gemini API using native fetch
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: message.trim() }],
-            },
-          ],
-          systemInstruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          generationConfig: {
-            temperature: 0.35,
-            topP: 0.9,
-            maxOutputTokens: 1200,
-          },
-        }),
-      }
+    const { text: responseText, provider: usedProvider } = await callWithFallback(
+      providers,
+      systemPrompt,
+      message.trim(),
     )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Gemini API returned error: ${response.status} - ${errorText}`)
-    }
-
-    const result = await response.json()
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text
-
-    if (!responseText) {
-      throw new Error('Empty response from Gemini API')
-    }
-
-    return new Response(JSON.stringify({ text: responseText }), {
+    return new Response(JSON.stringify({ text: responseText, provider: usedProvider }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
