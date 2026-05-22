@@ -300,6 +300,34 @@ function extractHeuristicLearnings(question: string): ParsedLearnTag[] {
   return learnings
 }
 
+function extractAdminLearningCommand(question: string): ParsedLearnTag | null {
+  const normalized = question.trim()
+  const commandPattern = /\b(?:salv[ae]|grave|guarde|memorize|aprenda)\b[\s,]*(?:isso\s+)?(?:como\s+)?(?:aprendizagem|aprendizado|mem[oó]ria|conhecimento)\b[:\s-]*(.*)$/i
+  const match = normalized.match(commandPattern)
+
+  if (!match) return null
+
+  let content = (match[1] || '').trim()
+  content = content.replace(/^que\s+/i, '').trim()
+
+  if (!content || content.length < 8) {
+    content = normalized
+      .replace(commandPattern, '')
+      .replace(/^(laura|admin)[:,\s-]*/i, '')
+      .trim()
+  }
+
+  if (!content || content.length < 8) return null
+
+  return {
+    type: 'rule',
+    content,
+    reason: 'Comando administrativo explicito do usuario para salvar como aprendizagem.',
+    confidence: 0.95,
+    extraction_method: 'admin_save_learning_command',
+  }
+}
+
 function shouldRunLearningExtractor(question: string, responseText: string, currentSuggestions: ParsedLearnTag[]) {
   if (currentSuggestions.length > 0) return false
 
@@ -452,15 +480,16 @@ async function saveLearningNotes(
       title: `Aprendizado da Laura: ${s.type}`,
       content: s.content,
       note_type: getLearningNoteType(s.type),
-      source_type: 'inferencia_ia',
+      source_type: s.extraction_method === 'admin_save_learning_command' ? 'usuario' : 'inferencia_ia',
       entity_type: entityType,
       entity_id: entityId,
       source_table: sourceId ? 'emendas' : null,
       source_id: sourceId,
       created_by: userId,
-      created_by_ai: true,
-      status: 'pendente_confirmacao',
+      created_by_ai: s.extraction_method !== 'admin_save_learning_command',
+      status: s.extraction_method === 'admin_save_learning_command' ? 'validado' : 'pendente_confirmacao',
       confidence: Math.min(0.95, Math.max(0.45, Number(s.confidence ?? 0.65))),
+      last_confirmed_at: s.extraction_method === 'admin_save_learning_command' ? new Date().toISOString() : null,
       metadata: {
         kind: 'learning',
         learning_type: s.type,
@@ -782,6 +811,11 @@ REGRAS DE RESPOSTA:
 - Feche com uma pergunta curta de proximo passo.
 
 APRENDIZADO AUTOMATICO:
+Comando administrativo:
+- Se o usuario pedir "salve como aprendizagem", "salve como aprendizado", "grave na memoria", "memorize" ou "aprenda",
+  trate como ordem explicita para salvar memoria viva validada.
+  Nao discuta a ordem; responda normalmente e salve o conteudo indicado.
+
 Quando voce perceber que o usuario tem uma preferencia clara, uma regra recorrente, uma correcao importante,
 um sinonimo usado pelo setor, uma decisao operacional, ou uma forma de trabalho que deve ser lembrada,
 inclua no FINAL da sua resposta (apos toda a resposta normal) uma tag de aprendizado no formato:
@@ -830,14 +864,21 @@ ${conversationHistory}
     // Parse visible LEARN tags, then run independent learning triggers.
     const { cleanText, suggestions: inlineSuggestions } = parseLearnTags(rawResponseText)
     const responseText = cleanText || rawResponseText
+    const adminLearningCommand = extractAdminLearningCommand(message.trim())
     const heuristicSuggestions = extractHeuristicLearnings(message.trim())
     const aiSuggestions = shouldRunLearningExtractor(message.trim(), responseText, [
       ...inlineSuggestions,
+      ...(adminLearningCommand ? [adminLearningCommand] : []),
       ...heuristicSuggestions,
     ])
       ? await extractLearningWithAI(providers, message.trim(), responseText, institutionalContext)
       : []
-    const suggestions = mergeLearningSuggestions(inlineSuggestions, heuristicSuggestions, aiSuggestions)
+    const suggestions = mergeLearningSuggestions(
+      inlineSuggestions,
+      adminLearningCommand ? [adminLearningCommand] : [],
+      heuristicSuggestions,
+      aiSuggestions,
+    )
 
     await saveChatMessage(
       supabaseClient,
