@@ -161,6 +161,50 @@ function formatConversationHistory(history: ChatHistoryMessage[] = []) {
     .join('\n')
 }
 
+interface MemoryRow {
+  type: string
+  content: string
+  importance: number
+}
+
+function formatMemoriesContext(memories: MemoryRow[]) {
+  if (!memories.length) return ''
+
+  const lines = memories.map((m) => {
+    const prefix = m.importance >= 4 ? '[IMPORTANTE] ' : ''
+    return `- ${prefix}(${m.type}) ${m.content}`
+  })
+
+  return [
+    'MEMORIAS DO USUARIO (preferencias e regras aprendidas):',
+    ...lines,
+    '',
+  ].join('\n')
+}
+
+interface ParsedLearnTag {
+  type: string
+  content: string
+  reason: string
+}
+
+function parseLearnTags(text: string): { cleanText: string; suggestions: ParsedLearnTag[] } {
+  const suggestions: ParsedLearnTag[] = []
+  const regex = /<LEARN\s*(?:type=["']?(\w+)["']?)?\s*(?:reason=["']?([^"'>]*)["']?)?>(.*?)<\/LEARN>/gis
+
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(text)) !== null) {
+    suggestions.push({
+      type: match[1] || 'preference',
+      reason: match[2]?.trim() || '',
+      content: match[3]?.trim() || '',
+    })
+  }
+
+  const cleanText = text.replace(/<LEARN[^>]*>.*?<\/LEARN>/gis, '').trim()
+  return { cleanText, suggestions }
+}
+
 // --- AI Provider Implementations ---
 
 function createGeminiProvider(): AIProvider | null {
@@ -344,20 +388,40 @@ Deno.serve(async (req: Request) => {
     }
     const userId = user.id
 
-    // Fetch conversation history from database
-    const { data: dbHistory, error: historyError } = await supabaseClient
-      .from('laura_conversations')
-      .select('role, content')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(10)
+    // Fetch conversation history, memories, and emendas in parallel
+    const [historyResult, memoriesResult, emendasResult] = await Promise.all([
+      supabaseClient
+        .from('laura_conversations')
+        .select('role, content')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabaseClient
+        .from('laura_memories')
+        .select('type, content, importance')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('importance', { ascending: false })
+        .limit(50),
+      supabaseClient
+        .from('emendas')
+        .select(
+          'numero_emenda, numero_proposta, parlamentar, autor, valor_total, valor_repasse, situacao, status_interno, ano_exercicio, origem, destino_recurso, objeto_emenda, descricao_completa, observacoes, tipo, tipo_recurso, natureza, portaria, data_repasse, situacao_recurso',
+        )
+        .order('ano_exercicio', { ascending: false })
+        .limit(1000),
+    ])
 
-    if (historyError) {
-      console.error('Error fetching history:', historyError)
-    }
+    if (historyResult.error) console.error('Error fetching history:', historyResult.error)
+    if (memoriesResult.error) console.error('Error fetching memories:', memoriesResult.error)
+    if (emendasResult.error) console.error('Error fetching emendas:', emendasResult.error)
+
+    const dbHistory = historyResult.data || []
+    const userMemories = (memoriesResult.data || []) as MemoryRow[]
+    const emendas = emendasResult.data || []
 
     // Prepare history for prompt (oldest first)
-    const recentHistory = (dbHistory || []).reverse().map(h => ({
+    const recentHistory = dbHistory.reverse().map(h => ({
       text: h.content,
       isBot: h.role === 'assistant'
     }))
@@ -369,24 +433,13 @@ Deno.serve(async (req: Request) => {
       content: message.trim(),
     })
 
-    const { data: emendas, error: emendasError } = await supabaseClient
-      .from('emendas')
-      .select(
-        'numero_emenda, numero_proposta, parlamentar, autor, valor_total, valor_repasse, situacao, status_interno, ano_exercicio, origem, destino_recurso, objeto_emenda, descricao_completa, observacoes, tipo, tipo_recurso, natureza, portaria, data_repasse, situacao_recurso',
-      )
-      .order('ano_exercicio', { ascending: false })
-      .limit(1000)
-
-    if (emendasError) {
-      console.error('Error fetching emendas:', emendasError)
-    }
-
-    const contextData = emendas?.map(formatEmendaContext) ?? []
+    const contextData = emendas.map(formatEmendaContext)
     const dataContext = contextData.length
       ? contextData.join('\n')
       : 'Nenhuma emenda foi retornada pelo Supabase para esta sessao. Se o usuario perguntar por dados especificos, informe que nao ha dados disponiveis no momento.'
-    const summaryContext = emendas?.length ? formatSummary(emendas) : 'Sem resumo disponivel.'
+    const summaryContext = emendas.length ? formatSummary(emendas) : 'Sem resumo disponivel.'
     const conversationHistory = formatConversationHistory(recentHistory)
+    const memoriesContext = formatMemoriesContext(userMemories)
 
     const systemPrompt = `Voce e a Laura, uma assistente virtual especialista em gestao publica e emendas parlamentares do sistema.
 Seu papel e ajudar gestores a entender prioridades, riscos, valores, status e proximas acoes das emendas.
@@ -401,7 +454,17 @@ REGRAS DE RESPOSTA:
 - Formate valores em Reais (R$).
 - Para perguntas de acompanhamento, considere o historico recente da conversa.
 - Quando fizer sentido, finalize com uma acao recomendada objetiva.
+- RESPEITE as memorias do usuario abaixo. Elas representam preferencias, regras e decisoes previamente confirmadas.
 
+APRENDIZADO AUTOMATICO:
+Quando voce perceber que o usuario tem uma preferencia clara, uma regra recorrente ou correcao importante,
+inclua no FINAL da sua resposta (apos toda a resposta normal) uma tag de aprendizado no formato:
+<LEARN type="preference" reason="motivo detectado">Conteudo da preferencia</LEARN>
+Os tipos possiveis sao: preference, rule, synonym, decision, follow_up, correction.
+Use isso com moderacao — apenas quando houver evidencia clara. Nao crie tags para perguntas normais.
+O usuario vera a sugestao e podera aprovar ou rejeitar.
+
+${memoriesContext}
 RESUMO DOS DADOS DISPONIVEIS:
 ${summaryContext}
 
@@ -428,19 +491,48 @@ ${conversationHistory}
       throw new Error('Nenhum provedor de IA esta configurado. Configure pelo menos GEMINI_API_KEY nos Secrets do Supabase.')
     }
 
-    const { text: responseText, provider: usedProvider } = await callWithFallback(
+    const { text: rawResponseText, provider: usedProvider } = await callWithFallback(
       providers,
       systemPrompt,
       message.trim(),
     )
 
-    // Save Laura's response to DB
+    // Parse LEARN tags and extract clean response
+    const { cleanText, suggestions } = parseLearnTags(rawResponseText)
+    const responseText = cleanText || rawResponseText
+
+    // Save Laura's response to DB (clean version without LEARN tags)
     await supabaseClient.from('laura_conversations').insert({
       user_id: userId,
       role: 'assistant',
       content: responseText,
-      provider: usedProvider,
+      metadata: { provider: usedProvider },
     })
+
+    // Save any learning suggestions detected
+    if (suggestions.length > 0) {
+      const validTypes = ['preference', 'rule', 'synonym', 'decision', 'follow_up', 'correction']
+      const suggestionRows = suggestions
+        .filter(s => s.content && validTypes.includes(s.type))
+        .map(s => ({
+          user_id: userId,
+          suggested_type: s.type,
+          suggested_content: s.content,
+          reason: s.reason || 'Detectado automaticamente pela Laura',
+          status: 'pending',
+        }))
+
+      if (suggestionRows.length > 0) {
+        const { error: sugError } = await supabaseClient
+          .from('laura_learning_suggestions')
+          .insert(suggestionRows)
+        if (sugError) {
+          console.error('Error saving learning suggestions:', sugError)
+        } else {
+          console.log(`[Laura] Saved ${suggestionRows.length} learning suggestion(s)`)
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ text: responseText, provider: usedProvider }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

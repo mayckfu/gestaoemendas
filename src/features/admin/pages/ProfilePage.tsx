@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save, Clock } from 'lucide-react'
+import { Loader2, Save, Clock, User, Brain } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -28,10 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
+import { LauraMemoriesTab } from '@/features/chat/components/LauraMemoriesTab'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -114,112 +116,131 @@ const ProfilePage = () => {
         </h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações Pessoais</CardTitle>
-          <CardDescription>
-            Atualize suas informações de conta e preferências do sistema.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Seu nome" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Informações Pessoais
+          </TabsTrigger>
+          <TabsTrigger value="laura" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Memórias da Laura
+          </TabsTrigger>
+        </TabsList>
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled />
-                    </FormControl>
-                    <FormDescription>
-                      O email não pode ser alterado diretamente. Contate o
-                      administrador.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-neutral-500" />
-                  Configuração de Sessão
-                </h3>
-                <FormField
-                  control={form.control}
-                  name="inactivity_timeout"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Configuração Personalizada de Tempo de Inatividade
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações Pessoais</CardTitle>
+              <CardDescription>
+                Atualize suas informações de conta e preferências do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome Completo</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tempo" />
-                          </SelectTrigger>
+                          <Input placeholder="Seu nome" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="30">30 minutos</SelectItem>
-                          <SelectItem value="60">1 hora</SelectItem>
-                          <SelectItem value="120">2 horas</SelectItem>
-                          <SelectItem value="240">4 horas</SelectItem>
-                          <SelectItem value="480">8 horas</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Defina quanto tempo o sistema deve aguardar antes de
-                        encerrar sua sessão por inatividade.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full sm:w-auto"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar Alterações
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled />
+                        </FormControl>
+                        <FormDescription>
+                          O email não pode ser alterado diretamente. Contate o
+                          administrador.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-neutral-500" />
+                      Configuração de Sessão
+                    </h3>
+                    <FormField
+                      control={form.control}
+                      name="inactivity_timeout"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Configuração Personalizada de Tempo de Inatividade
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tempo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="30">30 minutos</SelectItem>
+                              <SelectItem value="60">1 hora</SelectItem>
+                              <SelectItem value="120">2 horas</SelectItem>
+                              <SelectItem value="240">4 horas</SelectItem>
+                              <SelectItem value="480">8 horas</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Defina quanto tempo o sistema deve aguardar antes de
+                            encerrar sua sessão por inatividade.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Salvar Alterações
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="laura">
+          <LauraMemoriesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
