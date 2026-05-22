@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader2, Bot } from 'lucide-react'
+import { X, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -10,6 +10,111 @@ interface Message {
   id: string
   text: string
   isBot: boolean
+}
+
+function renderInlineText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>
+    }
+
+    return <span key={index}>{part}</span>
+  })
+}
+
+function MessageText({ text }: { text: string }) {
+  const normalizedText = text
+    .replace(/\s+\|\s+/g, '\n')
+    .replace(/\*\*(Número|Parlamentar|Valor|Situação|Status interno|Tipo recurso|Objeto):\*\*/g, '$1:')
+
+  return (
+    <div className="space-y-2">
+      {normalizedText.split(/\n{2,}/).map((block, blockIndex) => {
+        const lines = block.split('\n').filter(Boolean)
+
+        if (lines.every((line) => /^\s*[-*]\s+/.test(line))) {
+          return (
+            <ul key={blockIndex} className="list-disc space-y-1 pl-4">
+              {lines.map((line, lineIndex) => (
+                <li key={lineIndex}>{renderInlineText(line.replace(/^\s*[-*]\s+/, ''))}</li>
+              ))}
+            </ul>
+          )
+        }
+
+        return (
+          <p key={blockIndex} className="space-y-1">
+            {lines.map((line, lineIndex) => (
+              <span key={lineIndex} className="block">
+                {renderInlineText(line.replace(/^\s*[-*]\s+/, ''))}
+              </span>
+            ))}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function LauraIcon({
+  className = '',
+  variant = 'default',
+  showBackground = true,
+}: {
+  className?: string
+  variant?: 'default' | 'inverse'
+  showBackground?: boolean
+}) {
+  const colors = !showBackground
+    ? {
+      bg: 'transparent',
+      symbol: '#0F4EA8',
+      lens: '#10204A',
+      accent: '#25F4E5',
+    }
+    : variant === 'inverse'
+    ? {
+      bg: '#FFFFFF',
+      symbol: '#0F4EA8',
+      lens: '#10204A',
+      accent: '#25F4E5',
+    }
+    : {
+      bg: '#0F4EA8',
+      symbol: '#FFFFFF',
+      lens: '#10204A',
+      accent: '#25F4E5',
+    }
+
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {showBackground && <circle cx="32" cy="32" r="32" fill={colors.bg} />}
+      <g transform="translate(32 32) scale(1.24) translate(-32 -32)">
+        <path
+          d="M16.2 28.1C20 20.9 25.5 17.4 32.8 17.4c7.1 0 12.4 3.5 16 10.7-3.7 7.2-9.1 10.8-16.2 10.8-7.3 0-12.7-3.6-16.4-10.8Z"
+          fill={colors.symbol}
+        />
+        <rect x="24.3" y="24.2" width="17.5" height="7.8" rx="3.9" fill={colors.lens} />
+        <circle cx="28.6" cy="28.1" r="1.9" fill={colors.accent} />
+        <circle cx="37.5" cy="28.1" r="1.9" fill={colors.accent} />
+        <path
+          d="M23.5 38.3 18.9 43l5.1 6.3h11.6c2.7 0 4.1 1.9 3.3 4.2l-.7 2.2 6-5.5c2.8-2.7 2-7.6-1.5-9.5l-8-4.1a20 20 0 0 1-11.2 1.7Z"
+          fill={colors.symbol}
+        />
+        <circle cx="28" cy="44.8" r="1.8" fill={colors.lens} />
+        <circle cx="32.8" cy="44.8" r="1.8" fill={colors.lens} />
+        <circle cx="37.6" cy="44.8" r="1.8" fill={colors.lens} />
+      </g>
+    </svg>
+  )
 }
 
 export function ChatWidget() {
@@ -95,9 +200,16 @@ export function ChatWidget() {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg p-0 flex items-center justify-center bg-primary hover:bg-primary/90 transition-all z-50"
+        aria-label="Abrir chat da Laura"
+        className="fixed bottom-6 right-6 h-[76px] w-[172px] rounded-full bg-primary px-4 py-2 shadow-xl transition-all hover:bg-primary/95 hover:scale-[1.03] z-50"
       >
-        <MessageCircle className="h-6 w-6 text-primary-foreground" />
+        <span className="flex w-full items-center gap-3">
+          <LauraIcon className="h-[56px] w-[56px] shrink-0" variant="inverse" />
+          <span className="flex min-w-0 flex-col items-start leading-tight text-primary-foreground">
+            <span className="text-base font-semibold">Laura</span>
+            <span className="text-xs opacity-90">Abrir chat</span>
+          </span>
+        </span>
       </Button>
     )
   }
@@ -106,8 +218,8 @@ export function ChatWidget() {
     <Card className="fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] shadow-2xl flex flex-col z-50 border-neutral-200 dark:border-neutral-800 overflow-hidden">
       <CardHeader className="bg-primary text-primary-foreground py-3 px-4 flex flex-row items-center justify-between rounded-t-xl">
         <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          <CardTitle className="text-base font-medium">Laura AI</CardTitle>
+          <LauraIcon className="h-10 w-10" variant="inverse" />
+          <CardTitle className="text-base font-medium">Laura</CardTitle>
         </div>
         <Button
           variant="ghost"
@@ -124,15 +236,20 @@ export function ChatWidget() {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}
+              className={`flex items-end gap-2 ${msg.isBot ? 'justify-start' : 'justify-end'}`}
             >
+              {msg.isBot && (
+                <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center">
+                  <LauraIcon className="h-9 w-9" />
+                </div>
+              )}
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${msg.isBot
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.isBot
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
                     : 'bg-primary text-primary-foreground'
                   }`}
               >
-                {msg.text}
+                <MessageText text={msg.text} />
               </div>
             </div>
           ))}

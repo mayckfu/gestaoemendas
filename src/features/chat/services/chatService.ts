@@ -35,7 +35,7 @@ export const chatService = {
       if (!user) return []
 
       const { data, error } = await supabase
-        .from('laura_conversations')
+        .from('chat_messages')
         .select('id, role, content, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
