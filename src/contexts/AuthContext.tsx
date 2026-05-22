@@ -10,7 +10,7 @@ import { User, UserRole } from '@/lib/mock-data'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { Session } from '@supabase/supabase-js'
-import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
+import { clearVisitorData, isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 import { VISITOR_USERS } from '@/lib/visitor/visitorMockData'
 
 interface AuthContextType {
@@ -145,7 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Clear visitor session if active
       if (isVisitorActive()) {
-        const { clearVisitorData } = await import('@/lib/visitor/visitorStorageManager')
         clearVisitorData()
       }
 

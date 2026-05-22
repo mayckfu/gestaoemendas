@@ -60,7 +60,7 @@ export const GlobalSearch = ({
 
     document.addEventListener('keydown', down)
     return () => document.removeEventListener('keydown', down)
-  }, [onOpenChange])
+  }, [onOpenChange, open])
 
   const searchEmendas = useCallback(async (searchTerm: string) => {
     if (!searchTerm || searchTerm.length < 2) {
