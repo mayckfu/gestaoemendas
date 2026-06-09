@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -35,6 +36,19 @@ import {
   StatusInternoEnum,
 } from '@/lib/mock-data'
 import { formatCurrencyBRL } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
+import { isVisitorActive, visitorGetEmendas } from '@/lib/visitor'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+
 
 const emendaSchema = z.object({
   ano_exercicio: z.coerce.number().int().min(2020).max(2100),
@@ -76,6 +90,10 @@ export const EmendaForm = ({
 }: EmendaFormProps) => {
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2]
+
+  const [duplicateEmenda, setDuplicateEmenda] = useState<any>(null)
+  const [pendingValues, setPendingValues] = useState<EmendaFormValues | null>(null)
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
 
   const form = useForm<EmendaFormValues>({
     resolver: zodResolver(emendaSchema),
@@ -124,7 +142,7 @@ export const EmendaForm = ({
     }
   }, [initialData, form])
 
-  const handleSubmit = (values: EmendaFormValues) => {
+  const proceedSubmit = (values: EmendaFormValues) => {
     onSubmit({
       ...values,
       tipo: values.tipo as TipoEmendaEnum,
@@ -139,6 +157,48 @@ export const EmendaForm = ({
       valor_segundo_responsavel: values.valor_segundo_responsavel || 0,
     })
   }
+
+  const handleSubmit = async (values: EmendaFormValues) => {
+    if (initialData) {
+      proceedSubmit(values)
+      return
+    }
+
+    setIsCheckingDuplicate(true)
+    try {
+      let existingEmenda: any = null
+
+      if (isVisitorActive()) {
+        const { data } = visitorGetEmendas()
+        if (data) {
+          existingEmenda = data.find((e) => e.numero_emenda === values.numero_emenda)
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('emendas')
+          .select('id, numero_emenda, autor, parlamentar')
+          .eq('numero_emenda', values.numero_emenda)
+          .maybeSingle()
+
+        if (!error && data) {
+          existingEmenda = data
+        }
+      }
+
+      if (existingEmenda) {
+        setDuplicateEmenda(existingEmenda)
+        setPendingValues(values)
+      } else {
+        proceedSubmit(values)
+      }
+    } catch (error) {
+      console.error('Erro ao verificar emenda duplicada:', error)
+      proceedSubmit(values)
+    } finally {
+      setIsCheckingDuplicate(false)
+    }
+  }
+
 
   const valorTotal = form.watch('valor_total')
   const valorSegundo = form.watch('valor_segundo_responsavel')
@@ -515,9 +575,64 @@ export const EmendaForm = ({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit">Salvar</Button>
+          <Button type="submit" disabled={isCheckingDuplicate}>
+            {isCheckingDuplicate ? 'Verificando...' : 'Salvar'}
+          </Button>
         </div>
       </form>
+
+      <AlertDialog open={!!duplicateEmenda} onOpenChange={(open) => { if (!open) { setDuplicateEmenda(null); setPendingValues(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              Emenda já Cadastrada
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-foreground">
+              <p>
+                Já existe uma emenda cadastrada com o número <strong>{duplicateEmenda?.numero_emenda}</strong>.
+              </p>
+              {duplicateEmenda && (
+                <div className="text-sm border p-3 rounded-md bg-muted/30 space-y-1">
+                  <p><strong>Autor:</strong> {duplicateEmenda.autor}</p>
+                  <p><strong>Parlamentar:</strong> {duplicateEmenda.parlamentar}</p>
+                </div>
+              )}
+              <p className="text-muted-foreground text-sm pt-2">
+                O que você deseja fazer? Você pode visualizar a emenda existente em uma nova aba, ignorar este aviso e salvar a emenda repetida, ou cancelar para editar o número.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => { setDuplicateEmenda(null); setPendingValues(null); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (duplicateEmenda) {
+                  window.open(`/emenda/${duplicateEmenda.id}`, '_blank')
+                }
+              }}
+            >
+              Ver Emenda
+            </Button>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingValues) {
+                  proceedSubmit(pendingValues)
+                }
+                setDuplicateEmenda(null)
+                setPendingValues(null)
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              Ignorar e Salvar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   )
 }
