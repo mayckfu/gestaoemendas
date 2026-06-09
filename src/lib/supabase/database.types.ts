@@ -405,6 +405,12 @@ export type Database = {
           segundo_autor: string | null
           segundo_parlamentar: string | null
           situacao: Database["public"]["Enums"]["situacao_oficial"]
+          terceiro_autor: string | null
+          terceiro_parlamentar: string | null
+          valor_terceiro_responsavel: number | null
+          quarto_autor: string | null
+          quarto_parlamentar: string | null
+          valor_quarto_responsavel: number | null
           situacao_recurso: string | null
           status_interno: Database["public"]["Enums"]["status_interno"]
           tipo: Database["public"]["Enums"]["tipo_emenda_enum"]
@@ -436,6 +442,12 @@ export type Database = {
           segundo_autor?: string | null
           segundo_parlamentar?: string | null
           situacao?: Database["public"]["Enums"]["situacao_oficial"]
+          terceiro_autor?: string | null
+          terceiro_parlamentar?: string | null
+          valor_terceiro_responsavel?: number | null
+          quarto_autor?: string | null
+          quarto_parlamentar?: string | null
+          valor_quarto_responsavel?: number | null
           situacao_recurso?: string | null
           status_interno?: Database["public"]["Enums"]["status_interno"]
           tipo: Database["public"]["Enums"]["tipo_emenda_enum"]
@@ -469,6 +481,12 @@ export type Database = {
           situacao?: Database["public"]["Enums"]["situacao_oficial"]
           situacao_recurso?: string | null
           status_interno?: Database["public"]["Enums"]["status_interno"]
+          terceiro_autor?: string | null
+          terceiro_parlamentar?: string | null
+          valor_terceiro_responsavel?: number | null
+          quarto_autor?: string | null
+          quarto_parlamentar?: string | null
+          valor_quarto_responsavel?: number | null
           tipo?: Database["public"]["Enums"]["tipo_emenda_enum"]
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso"]
           updated_at?: string | null

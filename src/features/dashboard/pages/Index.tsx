@@ -188,12 +188,24 @@ const Index = () => {
         const primary = amendment.parlamentar || 'Não Informado'
         const secondary = amendment.segundo_parlamentar
         const secondaryValue = amendment.valor_segundo_responsavel || 0
-        const primaryValue = amendment.valor_total - secondaryValue
+        const tertiary = amendment.terceiro_parlamentar
+        const tertiaryValue = amendment.valor_terceiro_responsavel || 0
+        const quaternary = amendment.quarto_parlamentar
+        const quaternaryValue = amendment.valor_quarto_responsavel || 0
+        const primaryValue = amendment.valor_total - secondaryValue - tertiaryValue - quaternaryValue
 
         acc[primary] = (acc[primary] || 0) + primaryValue
 
         if (secondary && secondaryValue > 0) {
           acc[secondary] = (acc[secondary] || 0) + secondaryValue
+        }
+
+        if (tertiary && tertiaryValue > 0) {
+          acc[tertiary] = (acc[tertiary] || 0) + tertiaryValue
+        }
+
+        if (quaternary && quaternaryValue > 0) {
+          acc[quaternary] = (acc[quaternary] || 0) + quaternaryValue
         }
 
         return acc

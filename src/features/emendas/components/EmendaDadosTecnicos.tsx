@@ -269,7 +269,7 @@ export const EmendaDadosTecnicos = forwardRef<
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="segundo_autor">Segundo Autor</Label>
+                  <Label htmlFor="segundo_autor">2º Autor</Label>
                   <Input
                     id="segundo_autor"
                     value={formData.segundo_autor || ''}
@@ -281,7 +281,7 @@ export const EmendaDadosTecnicos = forwardRef<
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="segundo_parlamentar">
-                    Segundo Parlamentar
+                    2º Parlamentar
                   </Label>
                   <Input
                     id="segundo_parlamentar"
@@ -296,7 +296,7 @@ export const EmendaDadosTecnicos = forwardRef<
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div className="space-y-2">
                   <Label htmlFor="valor_segundo_responsavel">
-                    Valor do Segundo Responsável (R$)
+                    Valor do 2º Responsável (R$)
                   </Label>
                   <MoneyInput
                     id="valor_segundo_responsavel"
@@ -306,18 +306,105 @@ export const EmendaDadosTecnicos = forwardRef<
                     }
                   />
                 </div>
-                <div className="pb-3 text-sm">
-                  <span className="text-muted-foreground">
-                    Saldo Principal:
-                  </span>{' '}
-                  <span className="font-bold tabular-nums">
-                    {formatCurrencyBRL(
-                      (emenda.valor_total || 0) -
-                        (formData.valor_segundo_responsavel || 0),
-                      isPrivacyMode,
-                    )}
-                  </span>
+              </div>
+
+              {/* 3rd co-author */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="terceiro_autor">3º Autor</Label>
+                  <Input
+                    id="terceiro_autor"
+                    value={formData.terceiro_autor || ''}
+                    onChange={(e) =>
+                      handleChange('terceiro_autor', e.target.value)
+                    }
+                    placeholder="Nome do terceiro autor"
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="terceiro_parlamentar">
+                    3º Parlamentar
+                  </Label>
+                  <Input
+                    id="terceiro_parlamentar"
+                    value={formData.terceiro_parlamentar || ''}
+                    onChange={(e) =>
+                      handleChange('terceiro_parlamentar', e.target.value)
+                    }
+                    placeholder="Nome do terceiro parlamentar"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="valor_terceiro_responsavel">
+                    Valor do 3º Responsável (R$)
+                  </Label>
+                  <MoneyInput
+                    id="valor_terceiro_responsavel"
+                    value={formData.valor_terceiro_responsavel || 0}
+                    onChange={(val) =>
+                      handleChange('valor_terceiro_responsavel', val)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* 4th co-author */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quarto_autor">4º Autor</Label>
+                  <Input
+                    id="quarto_autor"
+                    value={formData.quarto_autor || ''}
+                    onChange={(e) =>
+                      handleChange('quarto_autor', e.target.value)
+                    }
+                    placeholder="Nome do quarto autor"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quarto_parlamentar">
+                    4º Parlamentar
+                  </Label>
+                  <Input
+                    id="quarto_parlamentar"
+                    value={formData.quarto_parlamentar || ''}
+                    onChange={(e) =>
+                      handleChange('quarto_parlamentar', e.target.value)
+                    }
+                    placeholder="Nome do quarto parlamentar"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="valor_quarto_responsavel">
+                    Valor do 4º Responsável (R$)
+                  </Label>
+                  <MoneyInput
+                    id="valor_quarto_responsavel"
+                    value={formData.valor_quarto_responsavel || 0}
+                    onChange={(val) =>
+                      handleChange('valor_quarto_responsavel', val)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t text-sm">
+                <span className="text-muted-foreground">
+                  Saldo Principal:
+                </span>{' '}
+                <span className="font-bold tabular-nums">
+                  {formatCurrencyBRL(
+                    (emenda.valor_total || 0) -
+                      (formData.valor_segundo_responsavel || 0) -
+                      (formData.valor_terceiro_responsavel || 0) -
+                      (formData.valor_quarto_responsavel || 0),
+                    isPrivacyMode,
+                  )}
+                </span>
               </div>
             </div>
 
@@ -385,20 +472,76 @@ export const EmendaDadosTecnicos = forwardRef<
               <>
                 <div className="col-span-full border-t border-neutral-100 dark:border-neutral-800 my-2" />
                 <ReadOnlyField
-                  label="Segundo Parlamentar"
+                  label="2º Parlamentar"
                   value={emenda.segundo_parlamentar}
                   className="md:col-span-2"
                 />
                 <ReadOnlyField
-                  label="Segundo Autor"
+                  label="2º Autor"
                   value={emenda.segundo_autor}
                 />
                 <ReadOnlyField
-                  label="Valor do Segundo Responsável"
+                  label="Valor do 2º Responsável"
                   value={
                     emenda.valor_segundo_responsavel
                       ? formatCurrencyBRL(
                           emenda.valor_segundo_responsavel,
+                          isPrivacyMode,
+                        )
+                      : null
+                  }
+                />
+              </>
+            ) : null}
+
+            {emenda.terceiro_parlamentar ||
+            emenda.terceiro_autor ||
+            emenda.valor_terceiro_responsavel ? (
+              <>
+                <div className="col-span-full border-t border-neutral-100 dark:border-neutral-800 my-2" />
+                <ReadOnlyField
+                  label="3º Parlamentar"
+                  value={emenda.terceiro_parlamentar}
+                  className="md:col-span-2"
+                />
+                <ReadOnlyField
+                  label="3º Autor"
+                  value={emenda.terceiro_autor}
+                />
+                <ReadOnlyField
+                  label="Valor do 3º Responsável"
+                  value={
+                    emenda.valor_terceiro_responsavel
+                      ? formatCurrencyBRL(
+                          emenda.valor_terceiro_responsavel,
+                          isPrivacyMode,
+                        )
+                      : null
+                  }
+                />
+              </>
+            ) : null}
+
+            {emenda.quarto_parlamentar ||
+            emenda.quarto_autor ||
+            emenda.valor_quarto_responsavel ? (
+              <>
+                <div className="col-span-full border-t border-neutral-100 dark:border-neutral-800 my-2" />
+                <ReadOnlyField
+                  label="4º Parlamentar"
+                  value={emenda.quarto_parlamentar}
+                  className="md:col-span-2"
+                />
+                <ReadOnlyField
+                  label="4º Autor"
+                  value={emenda.quarto_autor}
+                />
+                <ReadOnlyField
+                  label="Valor do 4º Responsável"
+                  value={
+                    emenda.valor_quarto_responsavel
+                      ? formatCurrencyBRL(
+                          emenda.valor_quarto_responsavel,
                           isPrivacyMode,
                         )
                       : null

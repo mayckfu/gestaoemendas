@@ -179,6 +179,12 @@ const EmendaDetailPage = () => {
           segundo_autor: updatedEmenda.segundo_autor || null,
           segundo_parlamentar: updatedEmenda.segundo_parlamentar || null,
           valor_segundo_responsavel: updatedEmenda.valor_segundo_responsavel || null,
+          terceiro_autor: updatedEmenda.terceiro_autor || null,
+          terceiro_parlamentar: updatedEmenda.terceiro_parlamentar || null,
+          valor_terceiro_responsavel: updatedEmenda.valor_terceiro_responsavel || null,
+          quarto_autor: updatedEmenda.quarto_autor || null,
+          quarto_parlamentar: updatedEmenda.quarto_parlamentar || null,
+          valor_quarto_responsavel: updatedEmenda.valor_quarto_responsavel || null,
         } as any)
         if (result.error) throw new Error(result.error.message)
         setEmendaData({ ...updatedEmenda })
@@ -206,6 +212,14 @@ const EmendaDetailPage = () => {
           segundo_parlamentar: updatedEmenda.segundo_parlamentar || null,
           valor_segundo_responsavel:
             updatedEmenda.valor_segundo_responsavel || null,
+          terceiro_autor: updatedEmenda.terceiro_autor || null,
+          terceiro_parlamentar: updatedEmenda.terceiro_parlamentar || null,
+          valor_terceiro_responsavel:
+            updatedEmenda.valor_terceiro_responsavel || null,
+          quarto_autor: updatedEmenda.quarto_autor || null,
+          quarto_parlamentar: updatedEmenda.quarto_parlamentar || null,
+          valor_quarto_responsavel:
+            updatedEmenda.valor_quarto_responsavel || null,
         })
         .eq('id', emendaData.id)
 

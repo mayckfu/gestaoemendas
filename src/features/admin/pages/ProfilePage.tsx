@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save, Clock, User, Brain } from 'lucide-react'
+import { Loader2, Save, Clock, User, Brain, Database } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -34,6 +34,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { isVisitorActive } from '@/lib/visitor/visitorStorageManager'
 import { LauraMemoriesTab } from '@/features/chat/components/LauraMemoriesTab'
+import { GoogleDriveSyncTab } from '@/features/admin/components/GoogleDriveSyncTab'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -117,7 +118,7 @@ const ProfilePage = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Informações Pessoais
@@ -125,6 +126,10 @@ const ProfilePage = () => {
           <TabsTrigger value="laura" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             Memórias da Laura
+          </TabsTrigger>
+          <TabsTrigger value="drive" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Google Drive
           </TabsTrigger>
         </TabsList>
 
@@ -239,6 +244,9 @@ const ProfilePage = () => {
 
         <TabsContent value="laura">
           <LauraMemoriesTab />
+        </TabsContent>
+        <TabsContent value="drive">
+          <GoogleDriveSyncTab />
         </TabsContent>
       </Tabs>
     </div>

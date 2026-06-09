@@ -73,6 +73,12 @@ const emendaSchema = z.object({
   segundo_autor: z.string().optional().nullable(),
   segundo_parlamentar: z.string().optional().nullable(),
   valor_segundo_responsavel: z.coerce.number().optional().nullable(),
+  terceiro_autor: z.string().optional().nullable(),
+  terceiro_parlamentar: z.string().optional().nullable(),
+  valor_terceiro_responsavel: z.coerce.number().optional().nullable(),
+  quarto_autor: z.string().optional().nullable(),
+  quarto_parlamentar: z.string().optional().nullable(),
+  valor_quarto_responsavel: z.coerce.number().optional().nullable(),
 })
 
 type EmendaFormValues = z.infer<typeof emendaSchema>
@@ -94,6 +100,9 @@ export const EmendaForm = ({
   const [duplicateEmenda, setDuplicateEmenda] = useState<any>(null)
   const [pendingValues, setPendingValues] = useState<EmendaFormValues | null>(null)
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
+  const [showExtraCoAuthors, setShowExtraCoAuthors] = useState(
+    !!(initialData?.terceiro_parlamentar || initialData?.quarto_parlamentar)
+  )
 
   const form = useForm<EmendaFormValues>({
     resolver: zodResolver(emendaSchema),
@@ -115,6 +124,12 @@ export const EmendaForm = ({
       segundo_autor: initialData?.segundo_autor || '',
       segundo_parlamentar: initialData?.segundo_parlamentar || '',
       valor_segundo_responsavel: initialData?.valor_segundo_responsavel || 0,
+      terceiro_autor: initialData?.terceiro_autor || '',
+      terceiro_parlamentar: initialData?.terceiro_parlamentar || '',
+      valor_terceiro_responsavel: initialData?.valor_terceiro_responsavel || 0,
+      quarto_autor: initialData?.quarto_autor || '',
+      quarto_parlamentar: initialData?.quarto_parlamentar || '',
+      valor_quarto_responsavel: initialData?.valor_quarto_responsavel || 0,
     },
   })
 
@@ -138,7 +153,14 @@ export const EmendaForm = ({
         segundo_autor: initialData.segundo_autor || '',
         segundo_parlamentar: initialData.segundo_parlamentar || '',
         valor_segundo_responsavel: initialData.valor_segundo_responsavel || 0,
+        terceiro_autor: initialData.terceiro_autor || '',
+        terceiro_parlamentar: initialData.terceiro_parlamentar || '',
+        valor_terceiro_responsavel: initialData.valor_terceiro_responsavel || 0,
+        quarto_autor: initialData.quarto_autor || '',
+        quarto_parlamentar: initialData.quarto_parlamentar || '',
+        valor_quarto_responsavel: initialData.valor_quarto_responsavel || 0,
       })
+      setShowExtraCoAuthors(!!(initialData.terceiro_parlamentar || initialData.quarto_parlamentar))
     }
   }, [initialData, form])
 
@@ -155,6 +177,12 @@ export const EmendaForm = ({
       segundo_autor: values.segundo_autor || null,
       segundo_parlamentar: values.segundo_parlamentar || null,
       valor_segundo_responsavel: values.valor_segundo_responsavel || 0,
+      terceiro_autor: values.terceiro_autor || null,
+      terceiro_parlamentar: values.terceiro_parlamentar || null,
+      valor_terceiro_responsavel: values.valor_terceiro_responsavel || 0,
+      quarto_autor: values.quarto_autor || null,
+      quarto_parlamentar: values.quarto_parlamentar || null,
+      valor_quarto_responsavel: values.valor_quarto_responsavel || 0,
     })
   }
 
@@ -202,7 +230,9 @@ export const EmendaForm = ({
 
   const valorTotal = form.watch('valor_total')
   const valorSegundo = form.watch('valor_segundo_responsavel')
-  const primeiroParlamentarShare = (valorTotal || 0) - (valorSegundo || 0)
+  const valorTerceiro = form.watch('valor_terceiro_responsavel')
+  const valorQuarto = form.watch('valor_quarto_responsavel')
+  const primeiroParlamentarShare = (valorTotal || 0) - (valorSegundo || 0) - (valorTerceiro || 0) - (valorQuarto || 0)
 
   return (
     <Form {...form}>
@@ -350,7 +380,7 @@ export const EmendaForm = ({
               name="segundo_autor"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Segundo Autor</FormLabel>
+                  <FormLabel>2º Autor</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Nome do segundo autor"
@@ -367,7 +397,7 @@ export const EmendaForm = ({
               name="segundo_parlamentar"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Segundo Parlamentar</FormLabel>
+                  <FormLabel>2º Parlamentar</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Nome do segundo parlamentar"
@@ -386,7 +416,7 @@ export const EmendaForm = ({
               name="valor_segundo_responsavel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor do Segundo Responsável (R$)</FormLabel>
+                  <FormLabel>Valor do 2º Responsável (R$)</FormLabel>
                   <FormControl>
                     <MoneyInput
                       placeholder="0,00"
@@ -398,12 +428,142 @@ export const EmendaForm = ({
                 </FormItem>
               )}
             />
-            <div className="pb-3 text-sm">
-              <span className="text-muted-foreground">Saldo Principal:</span>{' '}
-              <span className="font-bold tabular-nums">
-                {formatCurrencyBRL(primeiroParlamentarShare)}
-              </span>
+          </div>
+
+          {/* Toggle for additional co-authors */}
+          <div className="flex items-center space-x-2 pt-2 border-t border-dashed">
+            <Checkbox
+              id="show-extra-coauthors"
+              checked={showExtraCoAuthors}
+              onCheckedChange={(checked) => setShowExtraCoAuthors(!!checked)}
+            />
+            <label
+              htmlFor="show-extra-coauthors"
+              className="text-sm font-medium leading-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Adicionar 3º e 4º parlamentar
+            </label>
+          </div>
+
+          {showExtraCoAuthors && (
+            <div className="space-y-4 pt-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              {/* 3rd co-author */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="terceiro_autor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>3º Autor</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nome do terceiro autor"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="terceiro_parlamentar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>3º Parlamentar</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nome do terceiro parlamentar"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="valor_terceiro_responsavel"
+                render={({ field }) => (
+                  <FormItem className="max-w-[50%]">
+                    <FormLabel>Valor do 3º Responsável (R$)</FormLabel>
+                    <FormControl>
+                      <MoneyInput
+                        placeholder="0,00"
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 4th co-author */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="quarto_autor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>4º Autor</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nome do quarto autor"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="quarto_parlamentar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>4º Parlamentar</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nome do quarto parlamentar"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="valor_quarto_responsavel"
+                render={({ field }) => (
+                  <FormItem className="max-w-[50%]">
+                    <FormLabel>Valor do 4º Responsável (R$)</FormLabel>
+                    <FormControl>
+                      <MoneyInput
+                        placeholder="0,00"
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+          )}
+
+          <div className="pt-2 border-t text-sm">
+            <span className="text-muted-foreground">Saldo do Parlamentar Principal:</span>{' '}
+            <span className={`font-bold tabular-nums ${primeiroParlamentarShare < 0 ? 'text-destructive' : ''}`}>
+              {formatCurrencyBRL(primeiroParlamentarShare)}
+            </span>
           </div>
         </div>
 

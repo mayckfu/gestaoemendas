@@ -82,6 +82,12 @@ export type Amendment = {
   segundo_autor?: string | null
   segundo_parlamentar?: string | null
   valor_segundo_responsavel?: number | null
+  terceiro_autor?: string | null
+  terceiro_parlamentar?: string | null
+  valor_terceiro_responsavel?: number | null
+  quarto_autor?: string | null
+  quarto_parlamentar?: string | null
+  valor_quarto_responsavel?: number | null
   // Origin field
   origem?: 'FEDERAL' | 'ESTADUAL'
   // Technical fields (optional in base list)

@@ -683,6 +683,10 @@ const EmendasListPage = () => {
       Pendências: a.pendencias.join('; '),
       'Segundo Parlamentar': a.segundo_parlamentar || '',
       'Valor Segundo Resp.': a.valor_segundo_responsavel || 0,
+      'Terceiro Parlamentar': a.terceiro_parlamentar || '',
+      'Valor Terceiro Resp.': a.valor_terceiro_responsavel || 0,
+      'Quarto Parlamentar': a.quarto_parlamentar || '',
+      'Valor Quarto Resp.': a.valor_quarto_responsavel || 0,
     }))
     exportToCsv('emendas.csv', dataToExport)
   }
@@ -1058,6 +1062,18 @@ const EmendasListPage = () => {
                                     <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                                       <Users className="h-3 w-3" />
                                       {amendment.segundo_parlamentar}
+                                    </div>
+                                  )}
+                                  {amendment.terceiro_parlamentar && (
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {amendment.terceiro_parlamentar}
+                                    </div>
+                                  )}
+                                  {amendment.quarto_parlamentar && (
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {amendment.quarto_parlamentar}
                                     </div>
                                   )}
                                 </div>
