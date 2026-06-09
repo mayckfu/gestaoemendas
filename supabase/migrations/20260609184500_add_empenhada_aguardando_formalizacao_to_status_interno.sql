@@ -1,0 +1,2 @@
+-- Migration to add 'EMPENHADA_AGUARDANDO_FORMALIZACAO' to public.status_interno ENUM type
+ALTER TYPE public.status_interno ADD VALUE IF NOT EXISTS 'EMPENHADA_AGUARDANDO_FORMALIZACAO';
