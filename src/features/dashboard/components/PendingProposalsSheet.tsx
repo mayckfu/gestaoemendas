@@ -10,10 +10,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Link } from 'react-router-dom'
 import { DetailedAmendment } from '@/lib/mock-data'
-import { formatCurrencyBRL, normalizeNameKey } from '@/lib/utils'
+import { formatCurrencyBRL } from '@/lib/utils'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Users, ChevronRight, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  calculateParliamentaryDistribution,
+  getResponsibleKey,
+} from '@/lib/parliamentary-distribution'
 
 interface PendingProposalsSheetProps {
   isOpen: boolean
@@ -35,36 +39,49 @@ export const PendingProposalsSheet = ({
   const parliamentarians = useMemo(() => {
     if (pendingType !== 'Por Parlamentar') return []
 
-    const groups = proposals.reduce(
+    const countByResponsible = proposals.reduce(
       (acc, proposal) => {
-        const rawName = proposal.parlamentar || 'Desconhecido'
-        const normalizedKey = normalizeNameKey(rawName)
-        if (!acc[normalizedKey]) {
-          acc[normalizedKey] = {
-            name: rawName.trim().replace(/\s+/g, ' '),
-            count: 0,
-            totalValue: 0,
-          }
-        }
-        acc[normalizedKey].count += 1
-        acc[normalizedKey].totalValue += proposal.valor_total
+        const names = [
+          proposal.parlamentar,
+          proposal.segundo_parlamentar,
+          proposal.terceiro_parlamentar,
+          proposal.quarto_parlamentar,
+        ]
+
+        const uniqueKeys = new Set(
+          names
+            .map((name) => getResponsibleKey(name))
+            .filter(Boolean),
+        )
+
+        uniqueKeys.forEach((key) => {
+          acc[key] = (acc[key] || 0) + 1
+        })
+
         return acc
       },
-      {} as Record<string, { name: string; count: number; totalValue: number }>,
+      {} as Record<string, number>,
     )
 
-    return Object.values(groups).sort((a, b) => b.totalValue - a.totalValue)
+    return calculateParliamentaryDistribution(proposals).map((item) => ({
+      name: item.name,
+      count: countByResponsible[getResponsibleKey(item.name)] || 0,
+      totalValue: item.value,
+    }))
   }, [pendingType, proposals])
 
   const filteredProposals = useMemo(() => {
     if (selectedParliamentarian) {
-      const selectedKey = normalizeNameKey(selectedParliamentarian)
-      return proposals.filter(
-        (p) => {
-          const rawName = p.parlamentar || 'Desconhecido'
-          const key = normalizeNameKey(rawName)
-          return key === selectedKey
-        },
+      const selectedKey = getResponsibleKey(selectedParliamentarian)
+      return proposals.filter((proposal) =>
+        [
+          proposal.parlamentar,
+          proposal.segundo_parlamentar,
+          proposal.terceiro_parlamentar,
+          proposal.quarto_parlamentar,
+        ].some(
+          (name) => getResponsibleKey(name) === selectedKey,
+        ),
       )
     }
     return proposals

@@ -26,6 +26,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { Badge } from '@/components/ui/badge'
+import {
+  sumCompletedRepasses,
+  sumExecutedExpenses,
+} from '@/lib/financial-calculations'
 
 interface EmendaDetailHeaderProps {
   emenda: DetailedAmendment
@@ -42,8 +46,8 @@ export const EmendaDetailHeader = ({
   const { isPrivacyMode } = usePrivacy()
   const canEdit = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
 
-  const totalRepassado = emenda.repasses.reduce((acc, r) => acc + r.valor, 0)
-  const totalGasto = emenda.despesas.reduce((acc, d) => acc + d.valor, 0)
+  const totalRepassado = sumCompletedRepasses(emenda.repasses)
+  const totalGasto = sumExecutedExpenses(emenda.despesas)
   const execucaoPercent =
     totalRepassado > 0 ? (totalGasto / totalRepassado) * 100 : 0
   const coberturaPercent =

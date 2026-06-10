@@ -12,6 +12,7 @@ interface FinancialSummaryCardProps {
   pendingValue: number
   type: 'MAC' | 'PAP' | 'EQUIPAMENTO'
   progressLabel?: string
+  paidLabel?: string
   to?: string
 }
 
@@ -54,6 +55,7 @@ export const FinancialSummaryCard = ({
   pendingValue,
   type,
   progressLabel = 'Execução',
+  paidLabel = 'Executado',
   to,
 }: FinancialSummaryCardProps) => {
   const navigate = useNavigate()
@@ -168,7 +170,7 @@ export const FinancialSummaryCard = ({
             value={formatCurrencyBRL(totalValue, isPrivacyMode)}
           />
           <SummaryItem
-            label="Liquidado"
+            label={paidLabel}
             value={formatCurrencyBRL(paidValue, isPrivacyMode)}
             colorClass={theme.paidColor}
           />

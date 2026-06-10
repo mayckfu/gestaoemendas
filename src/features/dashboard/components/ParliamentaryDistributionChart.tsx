@@ -20,6 +20,23 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+function formatResponsibleTick(value: string) {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+
+  if (normalized.includes('ATENCAO PRIMARIA')) return 'Custeio PAP'
+  if (normalized.includes('MEDIA E ALTA COMPLEXIDADE')) return 'Custeio MAC'
+  if (normalized.includes('COMISSAO DE ASSUNTOS SOCIAIS')) return 'Comissão CAS'
+  if (normalized.includes('COMISSAO DA SAUDE')) return 'Comissão Saúde'
+  if (normalized.includes('BANCADA DE SERGIPE')) return 'Bancada SE'
+
+  const parts = value.trim().split(/\s+/)
+  if (parts.length > 2) return `${parts[0]} ${parts[1]}`
+  return value
+}
+
 export function ParliamentaryDistributionChart({
   data,
   periodKey,
@@ -73,12 +90,8 @@ export function ParliamentaryDistributionChart({
               type="category"
               axisLine={false}
               tickLine={false}
-              width={100}
-              tickFormatter={(value) => {
-                // Return just the first name or initials if too long
-                const parts = value.split(' ')
-                return parts[0]
-              }}
+              width={120}
+              tickFormatter={formatResponsibleTick}
               fontSize={11}
             />
             <Tooltip

@@ -1,38 +1,23 @@
 import { useMemo } from 'react'
-import { Amendment, Repasse, Despesa } from '@/lib/mock-data'
+import { Amendment, Despesa } from '@/lib/mock-data'
 import { FinancialSummaryCard } from './FinancialSummaryCard'
+import { sumExecutedExpenses } from '@/lib/financial-calculations'
 
 interface FinancialSummaryProps {
   amendments: Amendment[]
-  repasses: Repasse[]
   despesas: Despesa[]
 }
 
 export const FinancialSummary = ({
   amendments,
-  repasses,
   despesas,
 }: FinancialSummaryProps) => {
   const summaryData = useMemo(() => {
-    // Helper to get the progress value for a set of amendments
-    // It calculates the progress for each amendment as the MAX of its repasses and liquidated expenses
-    // to avoid double counting the same money in different stages of the flow.
-    const calculateProgressValue = (targetAmendments: Amendment[]) => {
-      return targetAmendments.reduce((sum, amendment) => {
-        const amendmentRepasses = repasses
-          .filter((r) => r.emenda_id === amendment.id && r.status === 'REPASSADO')
-          .reduce((s, r) => s + r.valor, 0)
-        
-        const amendmentDespesas = despesas
-          .filter((d) => 
-            d.emenda_id === amendment.id && 
-            (d.status_execucao === 'LIQUIDADA' || d.status_execucao === 'PAGA')
-          )
-          .reduce((s, d) => s + d.valor, 0)
-        
-        // Take the maximum to represent the furthest financial stage reached
-        return sum + Math.max(amendmentRepasses, amendmentDespesas)
-      }, 0)
+    const calculateExecutedValue = (targetAmendments: Amendment[]) => {
+      const ids = new Set(targetAmendments.map((amendment) => amendment.id))
+      return sumExecutedExpenses(
+        despesas.filter((despesa) => despesa.emenda_id && ids.has(despesa.emenda_id)),
+      )
     }
 
     // MAC Data
@@ -41,7 +26,7 @@ export const FinancialSummary = ({
         a.tipo_recurso === 'INCREMENTO_MAC' || a.tipo_recurso === 'CUSTEIO_MAC',
     )
     const totalMac = macAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    const paidMac = calculateProgressValue(macAmendments)
+    const paidMac = calculateExecutedValue(macAmendments)
     const pendingMac = Math.max(0, totalMac - paidMac)
 
     // PAP Data
@@ -50,7 +35,7 @@ export const FinancialSummary = ({
         a.tipo_recurso === 'INCREMENTO_PAP' || a.tipo_recurso === 'CUSTEIO_PAP',
     )
     const totalPap = papAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    const paidPap = calculateProgressValue(papAmendments)
+    const paidPap = calculateExecutedValue(papAmendments)
     const pendingPap = Math.max(0, totalPap - paidPap)
 
     // Equipamentos Data
@@ -61,7 +46,7 @@ export const FinancialSummary = ({
       (sum, a) => sum + a.valor_total,
       0,
     )
-    const paidEquip = calculateProgressValue(equipAmendments)
+    const paidEquip = calculateExecutedValue(equipAmendments)
     const pendingEquip = Math.max(0, totalEquip - paidEquip)
 
     return {
@@ -69,7 +54,7 @@ export const FinancialSummary = ({
       pap: { total: totalPap, paid: paidPap, pending: pendingPap },
       equip: { total: totalEquip, paid: paidEquip, pending: pendingEquip },
     }
-  }, [amendments, repasses, despesas])
+  }, [amendments, despesas])
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

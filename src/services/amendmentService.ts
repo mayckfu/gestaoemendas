@@ -130,7 +130,10 @@ export const amendmentService = {
         0
       )
       const totalGasto = (despesasRes.data || []).reduce(
-        (sum: number, d: any) => sum + Number(d.valor || 0),
+        (sum: number, d: any) =>
+          d.status_execucao === 'LIQUIDADA' || d.status_execucao === 'PAGA'
+            ? sum + Number(d.valor || 0)
+            : sum,
         0
       )
 

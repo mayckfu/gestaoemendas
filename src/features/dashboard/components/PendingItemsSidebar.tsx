@@ -13,8 +13,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DetailedAmendment } from '@/lib/mock-data'
 import { PendingProposalsSheet } from './PendingProposalsSheet'
-import { cn, normalizeNameKey } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { calculateParliamentaryDistribution } from '@/lib/parliamentary-distribution'
 
 type AlertItem = {
   title: string
@@ -118,12 +119,7 @@ export const PendingItemsSidebar = ({
       },
       {
         title: 'Por Parlamentar',
-        count: new Set(
-          amendments
-            .map((a) => a.parlamentar)
-            .filter(Boolean)
-            .map((name) => normalizeNameKey(name)),
-        ).size,
+        count: calculateParliamentaryDistribution(amendments).length,
         icon: Users,
         filter: () => true,
         urgency: 'low',

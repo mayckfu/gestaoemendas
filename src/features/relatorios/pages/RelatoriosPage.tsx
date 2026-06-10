@@ -28,6 +28,8 @@ import { ExecutionDetailsTab } from '../components/ExecutionDetailsTab'
 import { AuditReportTab } from '../components/AuditReportTab'
 import { useYear } from '@/contexts/YearContext'
 import { normalizeNameKey } from '@/lib/utils'
+import { isExecutedExpense } from '@/lib/financial-calculations'
+import { calculateParliamentaryDistribution } from '@/lib/parliamentary-distribution'
 
 const initialFilters: ReportFiltersState = {
   autor: '',
@@ -143,9 +145,49 @@ const RelatoriosPage = () => {
     })
   }, [filters, allData, selectedMonth])
 
-  const allDespesas = useMemo(
-    () => filteredData.flatMap((a) => a.despesas),
-    [filteredData],
+  const allDespesas = useMemo(() => {
+    return filteredData
+      .flatMap((a) => a.despesas)
+      .filter((despesa) => {
+        if (
+          filters.responsavel &&
+          !despesa.registrada_por
+            .toLowerCase()
+            .includes(filters.responsavel.toLowerCase())
+        )
+          return false
+        if (
+          filters.unidade &&
+          !despesa.unidade_destino
+            .toLowerCase()
+            .includes(filters.unidade.toLowerCase())
+        )
+          return false
+        if (
+          filters.demanda &&
+          !despesa.demanda?.toLowerCase().includes(filters.demanda.toLowerCase())
+        )
+          return false
+        if (
+          filters.statusExecucao !== 'all' &&
+          despesa.status_execucao !== filters.statusExecucao
+        )
+          return false
+        if (
+          filters.fornecedor &&
+          !despesa.fornecedor_nome
+            .toLowerCase()
+            .includes(filters.fornecedor.toLowerCase())
+        )
+          return false
+
+        return true
+      })
+  }, [filteredData, filters])
+
+  const executedDespesas = useMemo(
+    () => allDespesas.filter(isExecutedExpense),
+    [allDespesas],
   )
 
   const kpiData = useMemo(() => {
@@ -153,16 +195,15 @@ const RelatoriosPage = () => {
       (acc, item) => acc + item.valor_total,
       0,
     )
-    const totalExecuted = allDespesas.reduce((acc, item) => acc + item.valor, 0)
-    const activeLegislators = new Set(
-      filteredData
-        .map((d) => d.parlamentar)
-        .filter(Boolean)
-        .map((name) => normalizeNameKey(name)),
-    ).size
+    const totalExecuted = executedDespesas.reduce(
+      (acc, item) => acc + item.valor,
+      0,
+    )
+    const activeLegislators =
+      calculateParliamentaryDistribution(filteredData).length
 
     return { totalValue, totalExecuted, activeLegislators }
-  }, [filteredData, allDespesas])
+  }, [filteredData, executedDespesas])
 
   // Get trend data ignoring month filter so the whole year is visible
   const executionByMonth = useMemo(() => {
@@ -206,9 +247,42 @@ const RelatoriosPage = () => {
       monthsData[d.getMonth()].planejado += e.valor_total
     })
 
-    const despesasWithoutMonthFilter = dataWithoutMonthFilter.flatMap(
-      (a) => a.despesas,
-    )
+    const despesasWithoutMonthFilter = dataWithoutMonthFilter
+      .flatMap((a) => a.despesas)
+      .filter((despesa) => {
+        if (
+          filters.responsavel &&
+          !despesa.registrada_por
+            .toLowerCase()
+            .includes(filters.responsavel.toLowerCase())
+        )
+          return false
+        if (
+          filters.unidade &&
+          !despesa.unidade_destino
+            .toLowerCase()
+            .includes(filters.unidade.toLowerCase())
+        )
+          return false
+        if (
+          filters.demanda &&
+          !despesa.demanda?.toLowerCase().includes(filters.demanda.toLowerCase())
+        )
+          return false
+        if (
+          filters.statusExecucao !== 'all' &&
+          despesa.status_execucao !== filters.statusExecucao
+        )
+          return false
+        if (
+          filters.fornecedor &&
+          !despesa.fornecedor_nome
+            .toLowerCase()
+            .includes(filters.fornecedor.toLowerCase())
+        )
+          return false
+        return isExecutedExpense(despesa)
+      })
     despesasWithoutMonthFilter.forEach((d) => {
       if (!d.data) return
       const date = new Date(d.data + 'T00:00:00')
@@ -219,28 +293,7 @@ const RelatoriosPage = () => {
   }, [allData, filters])
 
   const consolidatedByParlamentar = useMemo(() => {
-    const displayNameMap: Record<string, string> = {}
-    const getDisplayName = (name: string) => {
-      const key = normalizeNameKey(name)
-      if (!displayNameMap[key]) {
-        displayNameMap[key] = name.trim().replace(/\s+/g, ' ')
-      }
-      return displayNameMap[key]
-    }
-
-    const data = filteredData.reduce(
-      (acc, item) => {
-        const rawName = item.parlamentar || 'Não informado'
-        const key = normalizeNameKey(rawName)
-        getDisplayName(rawName)
-        acc[key] = (acc[key] || 0) + item.valor_total
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-    return Object.entries(data)
-      .map(([key, value]) => ({ name: displayNameMap[key] || key, value }))
-      .sort((a, b) => b.value - a.value)
+    return calculateParliamentaryDistribution(filteredData)
   }, [filteredData])
 
   const consolidatedByTipoRecurso = useMemo(() => {
@@ -270,7 +323,7 @@ const RelatoriosPage = () => {
   }, [filteredData])
 
   const executionByResponsavel = useMemo(() => {
-    const data = allDespesas.reduce(
+    const data = executedDespesas.reduce(
       (acc, item) => {
         acc[item.registrada_por] = (acc[item.registrada_por] || 0) + item.valor
         return acc
@@ -280,10 +333,10 @@ const RelatoriosPage = () => {
     return Object.entries(data)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [allDespesas])
+  }, [executedDespesas])
 
   const executionByUnidade = useMemo(() => {
-    const data = allDespesas.reduce(
+    const data = executedDespesas.reduce(
       (acc, item) => {
         acc[item.unidade_destino] =
           (acc[item.unidade_destino] || 0) + item.valor
@@ -294,7 +347,7 @@ const RelatoriosPage = () => {
     return Object.entries(data)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [allDespesas])
+  }, [executedDespesas])
 
   const executionStatus = useMemo(() => {
     const data = allDespesas.reduce(
@@ -325,7 +378,45 @@ const RelatoriosPage = () => {
       getDisplayName(rawName)
 
       if (!grouping[key]) grouping[key] = {}
-      emenda.despesas.forEach((despesa) => {
+      emenda.despesas
+        .filter((despesa) => {
+          if (!isExecutedExpense(despesa)) return false
+          if (
+            filters.responsavel &&
+            !despesa.registrada_por
+              .toLowerCase()
+              .includes(filters.responsavel.toLowerCase())
+          )
+            return false
+          if (
+            filters.unidade &&
+            !despesa.unidade_destino
+              .toLowerCase()
+              .includes(filters.unidade.toLowerCase())
+          )
+            return false
+          if (
+            filters.demanda &&
+            !despesa.demanda
+              ?.toLowerCase()
+              .includes(filters.demanda.toLowerCase())
+          )
+            return false
+          if (
+            filters.statusExecucao !== 'all' &&
+            despesa.status_execucao !== filters.statusExecucao
+          )
+            return false
+          if (
+            filters.fornecedor &&
+            !despesa.fornecedor_nome
+              .toLowerCase()
+              .includes(filters.fornecedor.toLowerCase())
+          )
+            return false
+          return true
+        })
+        .forEach((despesa) => {
         const responsavel = despesa.registrada_por || 'Desconhecido'
         grouping[key][responsavel] =
           (grouping[key][responsavel] || 0) + despesa.valor
@@ -348,7 +439,7 @@ const RelatoriosPage = () => {
         }
       })
       .sort((a, b) => b.totalExecuted - a.totalExecuted)
-  }, [filteredData])
+  }, [filteredData, filters])
 
   const handleFilterChange = (newFilters: Partial<ReportFiltersState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
