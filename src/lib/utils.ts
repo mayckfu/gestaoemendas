@@ -66,3 +66,13 @@ export function stringToColor(str: string): string {
   // Returns a vibrant color with good contrast
   return `hsl(${hue}, 75%, 55%)`
 }
+
+export function normalizeNameKey(name: string): string {
+  if (!name) return ''
+  return name
+    .trim()
+    .replace(/\s+/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+}

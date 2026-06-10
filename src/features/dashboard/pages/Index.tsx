@@ -18,6 +18,7 @@ import { useYear } from '@/contexts/YearContext'
 import { isVisitorActive } from '@/lib/visitor'
 import { amendmentService } from '@/services/amendmentService'
 import { dashboardService } from '@/services/dashboardService'
+import { normalizeNameKey } from '@/lib/utils'
 
 const Index = () => {
   const { toast } = useToast()
@@ -180,12 +181,33 @@ const Index = () => {
     const totalGasto = fDespesas
       .filter(d => d.status_execucao === 'LIQUIDADA' || d.status_execucao === 'PAGA')
       .reduce((sum, d) => sum + d.valor, 0)
-    const activeLegislators = new Set(fAmendments.map((a) => a.parlamentar))
-      .size
+    const activeLegislators = new Set(
+      fAmendments
+        .map((a) => a.parlamentar)
+        .filter(Boolean)
+        .map((name) => normalizeNameKey(name)),
+    ).size
 
-    const budgetByParlamentar = fAmendments.reduce(
+    // Helper to normalize and match casing
+    const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ')
+    const getNormalizedKey = (name: string) => normalizeNameKey(name)
+
+    // Map to keep track of the display name (first casing we encounter)
+    const displayNameMap: Record<string, string> = {}
+    const getDisplayName = (name: string) => {
+      const key = getNormalizedKey(name)
+      if (!displayNameMap[key]) {
+        displayNameMap[key] = normalizeName(name)
+      }
+      return displayNameMap[key]
+    }
+
+    const rawBudgetByParlamentar = fAmendments.reduce(
       (acc, amendment) => {
         const primary = amendment.parlamentar || 'Não Informado'
+        const primaryKey = getNormalizedKey(primary)
+        getDisplayName(primary)
+
         const secondary = amendment.segundo_parlamentar
         const secondaryValue = amendment.valor_segundo_responsavel || 0
         const tertiary = amendment.terceiro_parlamentar
@@ -194,24 +216,37 @@ const Index = () => {
         const quaternaryValue = amendment.valor_quarto_responsavel || 0
         const primaryValue = amendment.valor_total - secondaryValue - tertiaryValue - quaternaryValue
 
-        acc[primary] = (acc[primary] || 0) + primaryValue
+        acc[primaryKey] = (acc[primaryKey] || 0) + primaryValue
 
         if (secondary && secondaryValue > 0) {
-          acc[secondary] = (acc[secondary] || 0) + secondaryValue
+          const secondaryKey = getNormalizedKey(secondary)
+          getDisplayName(secondary)
+          acc[secondaryKey] = (acc[secondaryKey] || 0) + secondaryValue
         }
 
         if (tertiary && tertiaryValue > 0) {
-          acc[tertiary] = (acc[tertiary] || 0) + tertiaryValue
+          const tertiaryKey = getNormalizedKey(tertiary)
+          getDisplayName(tertiary)
+          acc[tertiaryKey] = (acc[tertiaryKey] || 0) + tertiaryValue
         }
 
         if (quaternary && quaternaryValue > 0) {
-          acc[quaternary] = (acc[quaternary] || 0) + quaternaryValue
+          const quaternaryKey = getNormalizedKey(quaternary)
+          getDisplayName(quaternary)
+          acc[quaternaryKey] = (acc[quaternaryKey] || 0) + quaternaryValue
         }
 
         return acc
       },
       {} as Record<string, number>,
     )
+
+    // Reconstruct with original case names
+    const budgetByParlamentar: Record<string, number> = {}
+    Object.entries(rawBudgetByParlamentar).forEach(([key, val]) => {
+      const name = displayNameMap[key] || key
+      budgetByParlamentar[name] = val
+    })
 
     const gastoPorResponsavelData = Object.entries(budgetByParlamentar)
       .map(([name, value]) => ({ name, value }))

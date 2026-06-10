@@ -22,6 +22,7 @@ import { parse, format, parseISO, getMonth } from 'date-fns'
 import { Amendment, SituacaoOficial, TipoEmenda } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatCurrencyBRL, normalizeNameKey } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -59,7 +60,7 @@ import {
   FiltersState,
 } from '@/features/emendas/components/EmendasFilters'
 import { DateRange } from 'react-day-picker'
-import { formatCurrencyBRL, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import {
   Tooltip,
   TooltipContent,
@@ -306,10 +307,15 @@ const EmendasListPage = () => {
   }, [localAmendments])
 
   const uniqueParlamentares = useMemo(() => {
-    const parlamentares = new Set(
-      localAmendments.map((a) => a.parlamentar).filter(Boolean),
-    )
-    return Array.from(parlamentares).sort()
+    const displayNameMap: Record<string, string> = {}
+    localAmendments.forEach((a) => {
+      if (!a.parlamentar) return
+      const key = normalizeNameKey(a.parlamentar)
+      if (!displayNameMap[key]) {
+        displayNameMap[key] = a.parlamentar.trim().replace(/\s+/g, ' ')
+      }
+    })
+    return Object.values(displayNameMap).sort((a, b) => a.localeCompare(b))
   }, [localAmendments])
 
   const filters = useMemo<FiltersState>(() => {
@@ -562,11 +568,11 @@ const EmendasListPage = () => {
         // Existing Filters
         if (filters.autor !== 'all' && amendment.autor !== filters.autor)
           return false
-        if (
-          filters.parlamentar !== 'all' &&
-          amendment.parlamentar !== filters.parlamentar
-        )
-          return false
+        if (filters.parlamentar !== 'all') {
+          const selectedKey = normalizeNameKey(filters.parlamentar)
+          const currentKey = normalizeNameKey(amendment.parlamentar || '')
+          if (currentKey !== selectedKey) return false
+        }
 
         if (filters.tipo !== 'all' && amendment.tipo !== filters.tipo)
           return false

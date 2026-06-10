@@ -27,6 +27,7 @@ import { LegislatorPerformanceTab } from '../components/LegislatorPerformanceTab
 import { ExecutionDetailsTab } from '../components/ExecutionDetailsTab'
 import { AuditReportTab } from '../components/AuditReportTab'
 import { useYear } from '@/contexts/YearContext'
+import { normalizeNameKey } from '@/lib/utils'
 
 const initialFilters: ReportFiltersState = {
   autor: '',
@@ -153,8 +154,12 @@ const RelatoriosPage = () => {
       0,
     )
     const totalExecuted = allDespesas.reduce((acc, item) => acc + item.valor, 0)
-    const activeLegislators = new Set(filteredData.map((d) => d.parlamentar))
-      .size
+    const activeLegislators = new Set(
+      filteredData
+        .map((d) => d.parlamentar)
+        .filter(Boolean)
+        .map((name) => normalizeNameKey(name)),
+    ).size
 
     return { totalValue, totalExecuted, activeLegislators }
   }, [filteredData, allDespesas])
@@ -214,16 +219,27 @@ const RelatoriosPage = () => {
   }, [allData, filters])
 
   const consolidatedByParlamentar = useMemo(() => {
+    const displayNameMap: Record<string, string> = {}
+    const getDisplayName = (name: string) => {
+      const key = normalizeNameKey(name)
+      if (!displayNameMap[key]) {
+        displayNameMap[key] = name.trim().replace(/\s+/g, ' ')
+      }
+      return displayNameMap[key]
+    }
+
     const data = filteredData.reduce(
       (acc, item) => {
-        const name = item.parlamentar || 'Não informado'
-        acc[name] = (acc[name] || 0) + item.valor_total
+        const rawName = item.parlamentar || 'Não informado'
+        const key = normalizeNameKey(rawName)
+        getDisplayName(rawName)
+        acc[key] = (acc[key] || 0) + item.valor_total
         return acc
       },
       {} as Record<string, number>,
     )
     return Object.entries(data)
-      .map(([name, value]) => ({ name, value }))
+      .map(([key, value]) => ({ name: displayNameMap[key] || key, value }))
       .sort((a, b) => b.value - a.value)
   }, [filteredData])
 
@@ -294,24 +310,36 @@ const RelatoriosPage = () => {
 
   const executionByParlamentarAndResponsavel = useMemo(() => {
     const grouping: Record<string, Record<string, number>> = {}
+    const displayNameMap: Record<string, string> = {}
+    const getDisplayName = (name: string) => {
+      const key = normalizeNameKey(name)
+      if (!displayNameMap[key]) {
+        displayNameMap[key] = name.trim().replace(/\s+/g, ' ')
+      }
+      return displayNameMap[key]
+    }
+
     filteredData.forEach((emenda) => {
-      const parlamentar = emenda.parlamentar || 'Não informado'
-      if (!grouping[parlamentar]) grouping[parlamentar] = {}
+      const rawName = emenda.parlamentar || 'Não informado'
+      const key = normalizeNameKey(rawName)
+      getDisplayName(rawName)
+
+      if (!grouping[key]) grouping[key] = {}
       emenda.despesas.forEach((despesa) => {
         const responsavel = despesa.registrada_por || 'Desconhecido'
-        grouping[parlamentar][responsavel] =
-          (grouping[parlamentar][responsavel] || 0) + despesa.valor
+        grouping[key][responsavel] =
+          (grouping[key][responsavel] || 0) + despesa.valor
       })
     })
 
     return Object.entries(grouping)
-      .map(([parlamentar, responsaveis]) => {
+      .map(([key, responsaveis]) => {
         const totalExecuted = Object.values(responsaveis).reduce(
           (a, b) => a + b,
           0,
         )
         return {
-          parlamentar,
+          parlamentar: displayNameMap[key] || key,
           responsaveis: Object.entries(responsaveis).map(([name, value]) => ({
             name,
             value,

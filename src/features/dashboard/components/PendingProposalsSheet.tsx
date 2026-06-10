@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Link } from 'react-router-dom'
 import { DetailedAmendment } from '@/lib/mock-data'
-import { formatCurrencyBRL } from '@/lib/utils'
+import { formatCurrencyBRL, normalizeNameKey } from '@/lib/utils'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Users, ChevronRight, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,16 +37,17 @@ export const PendingProposalsSheet = ({
 
     const groups = proposals.reduce(
       (acc, proposal) => {
-        const name = proposal.parlamentar || 'Desconhecido'
-        if (!acc[name]) {
-          acc[name] = {
-            name,
+        const rawName = proposal.parlamentar || 'Desconhecido'
+        const normalizedKey = normalizeNameKey(rawName)
+        if (!acc[normalizedKey]) {
+          acc[normalizedKey] = {
+            name: rawName.trim().replace(/\s+/g, ' '),
             count: 0,
             totalValue: 0,
           }
         }
-        acc[name].count += 1
-        acc[name].totalValue += proposal.valor_total
+        acc[normalizedKey].count += 1
+        acc[normalizedKey].totalValue += proposal.valor_total
         return acc
       },
       {} as Record<string, { name: string; count: number; totalValue: number }>,
@@ -57,8 +58,13 @@ export const PendingProposalsSheet = ({
 
   const filteredProposals = useMemo(() => {
     if (selectedParliamentarian) {
+      const selectedKey = normalizeNameKey(selectedParliamentarian)
       return proposals.filter(
-        (p) => (p.parlamentar || 'Desconhecido') === selectedParliamentarian,
+        (p) => {
+          const rawName = p.parlamentar || 'Desconhecido'
+          const key = normalizeNameKey(rawName)
+          return key === selectedKey
+        },
       )
     }
     return proposals
