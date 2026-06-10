@@ -1018,6 +1018,7 @@ export type Database = {
         | "PROPOSTA_APROVADA"
         | "CLASSIFICADA_AGUARDANDO_SECRETARIA"
         | "ANALISE_TECNICA_MERITO"
+        | "PROPOSTA_FAVORAVEL_AGUARDANDO_CLASSIFICACAO"
       tipo_emenda_enum: "individual" | "bancada" | "comissao" | "programa"
       tipo_recurso:
         | "CUSTEIO_MAC"
@@ -1180,6 +1181,7 @@ export const Constants = {
         "PROPOSTA_APROVADA",
         "CLASSIFICADA_AGUARDANDO_SECRETARIA",
         "ANALISE_TECNICA_MERITO",
+        "PROPOSTA_FAVORAVEL_AGUARDANDO_CLASSIFICACAO",
       ],
       tipo_emenda_enum: ["individual", "bancada", "comissao", "programa"],
       tipo_recurso: [
