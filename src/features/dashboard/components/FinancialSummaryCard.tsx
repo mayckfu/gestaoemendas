@@ -10,7 +10,7 @@ interface FinancialSummaryCardProps {
   totalValue: number
   paidValue: number
   pendingValue: number
-  type: 'MAC' | 'PAP' | 'EQUIPAMENTO'
+  type: 'MAC' | 'PAP' | 'INCREMENTO_MAC' | 'INCREMENTO_PAP' | 'EQUIPAMENTO'
   progressLabel?: string
   paidLabel?: string
   to?: string
@@ -29,16 +29,16 @@ const SummaryItem = ({
 }) => (
   <div
     className={cn(
-      'flex flex-col p-3 rounded-lg bg-neutral-50 border border-neutral-100/50 min-w-0 overflow-hidden',
+      'flex items-center justify-between gap-3 p-3 rounded-lg bg-neutral-50 border border-neutral-100/50 min-w-0',
       className,
     )}
   >
-    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 truncate">
+    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">
       {label}
     </p>
     <p
       className={cn(
-        'text-sm font-bold tabular-nums break-words leading-tight truncate',
+        'text-sm sm:text-base font-bold tabular-nums leading-tight text-right whitespace-nowrap',
         colorClass || 'text-neutral-900',
       )}
       title={value}
@@ -85,6 +85,16 @@ export const FinancialSummaryCard = ({
           borderColor: 'border-cyan-200 ring-cyan-100',
           Icon: PieChart,
         }
+      case 'INCREMENTO_MAC':
+        return {
+          progressColor: 'bg-indigo-600',
+          iconBgColor: 'bg-indigo-50 text-indigo-600',
+          paidColor: 'text-indigo-700',
+          pendingColor: 'text-rose-600',
+          borderColor: 'border-indigo-200 ring-indigo-100',
+          Icon: Box,
+        }
+      case 'INCREMENTO_PAP':
       case 'EQUIPAMENTO':
         return {
           progressColor: 'bg-purple-600',
@@ -111,8 +121,8 @@ export const FinancialSummaryCard = ({
       )}
     >
       <CardHeader className="pb-4 border-b border-neutral-100 bg-neutral-50/30 w-full px-4 sm:px-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
+          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
               className={cn(
                 'p-2.5 rounded-xl shadow-sm border border-white shrink-0',
@@ -122,13 +132,15 @@ export const FinancialSummaryCard = ({
               <theme.Icon className="h-5 w-5" />
             </div>
             <div className="flex flex-col min-w-0">
-              <CardTitle className="text-base sm:text-lg font-bold text-brand-900 truncate pr-2">
+              <CardTitle className="text-base sm:text-lg font-bold text-brand-900 leading-tight whitespace-normal">
                 {title}
               </CardTitle>
-              <span className="text-xs text-muted-foreground font-medium truncate">
-                {type === 'EQUIPAMENTO'
-                  ? 'Recursos de Capital'
-                  : 'Recursos de Custeio'}
+              <span className="text-xs text-muted-foreground font-medium">
+                {type === 'INCREMENTO_MAC' || type === 'INCREMENTO_PAP'
+                  ? 'Recursos de Incremento'
+                  : type === 'EQUIPAMENTO'
+                    ? 'Equipamento (Legado)'
+                    : 'Recursos de Custeio'}
               </span>
             </div>
           </div>
@@ -163,8 +175,7 @@ export const FinancialSummaryCard = ({
           </div>
         </div>
 
-        {/* Refined Grid for Values - Prevents Clipping */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="space-y-2">
           <SummaryItem
             label="Previsto"
             value={formatCurrencyBRL(totalValue, isPrivacyMode)}

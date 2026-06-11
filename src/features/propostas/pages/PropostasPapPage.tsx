@@ -34,7 +34,9 @@ const PropostasPapPage = () => {
         if (isVisitorActive()) {
           const store = getVisitorStore()
           const emendas = (store?.emendas ?? []).filter((e) => {
-            const isPap = e.tipo_recurso === 'INCREMENTO_PAP' || e.tipo_recurso === 'CUSTEIO_PAP'
+            const isPap =
+              e.tipo_recurso === 'INCREMENTO_PAP' ||
+              e.tipo_recurso === 'CUSTEIO_PAP'
             const yearMatch = !selectedYear || selectedYear === 'all' || e.ano_exercicio === parseInt(selectedYear)
             return isPap && yearMatch
           })
@@ -46,7 +48,10 @@ const PropostasPapPage = () => {
         let query = supabase
           .from('emendas')
           .select('*')
-          .in('tipo_recurso', ['INCREMENTO_PAP', 'CUSTEIO_PAP'])
+          .in('tipo_recurso', [
+            'INCREMENTO_PAP',
+            'CUSTEIO_PAP',
+          ])
           .order('created_at', { ascending: false })
 
         if (selectedYear && selectedYear !== 'all') {

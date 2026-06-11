@@ -97,6 +97,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { exportToDocx } from '@/features/emendas/lib/exportDocx'
+import { isMacResource, isPapResource } from '@/lib/resource-classification'
 
 const ITEMS_PER_PAGE = 10
 
@@ -577,25 +578,27 @@ const EmendasListPage = () => {
         if (filters.tipo !== 'all' && amendment.tipo !== filters.tipo)
           return false
 
-        // Resource Type Filter with Group logic (MAC, PAP)
-        if (filters.tipoRecurso !== 'all') {
-          if (filters.tipoRecurso === 'MAC') {
-            if (
-              amendment.tipo_recurso !== 'INCREMENTO_MAC' &&
-              amendment.tipo_recurso !== 'CUSTEIO_MAC'
-            ) {
+          // Resource Type Filter with Group logic (MAC, PAP)
+          if (filters.tipoRecurso !== 'all') {
+            if (filters.tipoRecurso === 'MAC') {
+              if (!isMacResource(amendment.tipo_recurso)) return false
+            } else if (filters.tipoRecurso === 'PAP') {
+              if (!isPapResource(amendment.tipo_recurso)) return false
+            } else if (filters.tipoRecurso === 'CUSTEIO_MAC_TOTAL') {
+              if (
+                amendment.tipo_recurso !== 'INCREMENTO_MAC' &&
+                amendment.tipo_recurso !== 'CUSTEIO_MAC'
+              )
+                return false
+            } else if (filters.tipoRecurso === 'CUSTEIO_PAP_TOTAL') {
+              if (
+                amendment.tipo_recurso !== 'INCREMENTO_PAP' &&
+                amendment.tipo_recurso !== 'CUSTEIO_PAP'
+              )
+                return false
+            } else if (amendment.tipo_recurso !== filters.tipoRecurso) {
               return false
             }
-          } else if (filters.tipoRecurso === 'PAP') {
-            if (
-              amendment.tipo_recurso !== 'INCREMENTO_PAP' &&
-              amendment.tipo_recurso !== 'CUSTEIO_PAP'
-            ) {
-              return false
-            }
-          } else if (amendment.tipo_recurso !== filters.tipoRecurso) {
-            return false
-          }
         }
 
         if (

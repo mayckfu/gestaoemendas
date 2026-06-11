@@ -34,7 +34,9 @@ const PropostasMacPage = () => {
         if (isVisitorActive()) {
           const store = getVisitorStore()
           const emendas = (store?.emendas ?? []).filter((e) => {
-            const isMac = e.tipo_recurso === 'INCREMENTO_MAC' || e.tipo_recurso === 'CUSTEIO_MAC'
+            const isMac =
+              e.tipo_recurso === 'INCREMENTO_MAC' ||
+              e.tipo_recurso === 'CUSTEIO_MAC'
             const yearMatch = !selectedYear || selectedYear === 'all' || e.ano_exercicio === parseInt(selectedYear)
             return isMac && yearMatch
           })
@@ -46,7 +48,10 @@ const PropostasMacPage = () => {
         let query = supabase
           .from('emendas')
           .select('*')
-          .in('tipo_recurso', ['INCREMENTO_MAC', 'CUSTEIO_MAC'])
+          .in('tipo_recurso', [
+            'INCREMENTO_MAC',
+            'CUSTEIO_MAC',
+          ])
           .order('created_at', { ascending: false })
 
         if (selectedYear && selectedYear !== 'all') {

@@ -38,7 +38,10 @@ const NATUREZAS_DESPESA = [
 
 const getNaturezaPadrao = (tipoRecurso?: string): string => {
   if (!tipoRecurso) return ''
-  if (tipoRecurso === 'EQUIPAMENTO') return '33.90.52 - Equipamentos e Material Permanente'
+  if (
+    tipoRecurso === 'EQUIPAMENTO'
+  )
+    return '33.90.52 - Equipamentos e Material Permanente'
   if (tipoRecurso === 'CUSTEIO_MAC' || tipoRecurso === 'CUSTEIO_PAP') return '33.90.39 - Serviços de Terceiros PJ'
   if (tipoRecurso === 'INCREMENTO_MAC' || tipoRecurso === 'INCREMENTO_PAP') return '33.90.30 - Material de Consumo'
   return ''

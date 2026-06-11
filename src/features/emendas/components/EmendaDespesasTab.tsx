@@ -243,13 +243,13 @@ export const EmendaDespesasTab = forwardRef<
     }
 
     // Conditional Categories
-    const availableCategories = Object.values(AuditCategories).filter((cat) => {
-      if (cat === AuditCategories.EQUIPAMENTOS) {
-        // Safe check for tipoRecurso which might be passed as undefined initially
+      const availableCategories = Object.values(AuditCategories).filter((cat) => {
+        if (cat === AuditCategories.EQUIPAMENTOS) {
+          // Safe check for tipoRecurso which might be passed as undefined initially
         return tipoRecurso === 'EQUIPAMENTO'
-      }
-      return true
-    })
+        }
+        return true
+      })
 
     return (
       <>

@@ -544,6 +544,10 @@ export type Database = {
           ano: number
           created_at: string | null
           limite_capital: number
+          limite_incremento_mac: number
+          limite_incremento_pap: number
+          limite_investimento_mac: number
+          limite_investimento_pap: number
           limite_mac: number
           limite_pap: number
           updated_at: string | null
@@ -552,6 +556,10 @@ export type Database = {
           ano: number
           created_at?: string | null
           limite_capital?: number
+          limite_incremento_mac?: number
+          limite_incremento_pap?: number
+          limite_investimento_mac?: number
+          limite_investimento_pap?: number
           limite_mac?: number
           limite_pap?: number
           updated_at?: string | null
@@ -560,6 +568,10 @@ export type Database = {
           ano?: number
           created_at?: string | null
           limite_capital?: number
+          limite_incremento_mac?: number
+          limite_incremento_pap?: number
+          limite_investimento_mac?: number
+          limite_investimento_pap?: number
           limite_mac?: number
           limite_pap?: number
           updated_at?: string | null
@@ -966,6 +978,8 @@ export type Database = {
         | 'CUSTEIO_MAC'
         | 'CUSTEIO_PAP'
         | 'EQUIPAMENTO'
+        | 'INVESTIMENTO_MAC'
+        | 'INVESTIMENTO_PAP'
         | 'INCREMENTO_MAC'
         | 'INCREMENTO_PAP'
         | 'OUTRO'
@@ -1130,6 +1144,8 @@ export const Constants = {
         'CUSTEIO_MAC',
         'CUSTEIO_PAP',
         'EQUIPAMENTO',
+        'INVESTIMENTO_MAC',
+        'INVESTIMENTO_PAP',
         'INCREMENTO_MAC',
         'INCREMENTO_PAP',
         'OUTRO',
@@ -1271,6 +1287,10 @@ export const Constants = {
 //   limite_mac: numeric (not null, default: 0)
 //   limite_pap: numeric (not null, default: 0)
 //   limite_capital: numeric (not null, default: 0)
+//   limite_incremento_mac: numeric (not null, default: 0)
+//   limite_incremento_pap: numeric (not null, default: 0)
+//   limite_investimento_mac: numeric (not null, default: 0)
+//   limite_investimento_pap: numeric (not null, default: 0)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
 // Table: notifications

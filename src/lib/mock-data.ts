@@ -1,7 +1,7 @@
 export const TipoRecurso = {
   CUSTEIO_MAC: 'Custeio MAC',
   CUSTEIO_PAP: 'Custeio PAP',
-  EQUIPAMENTO: 'Equipamento',
+  EQUIPAMENTO: 'Equipamento (Legado)',
   INCREMENTO_MAC: 'Incremento MAC',
   INCREMENTO_PAP: 'Incremento PAP',
   OUTRO: 'Outro',

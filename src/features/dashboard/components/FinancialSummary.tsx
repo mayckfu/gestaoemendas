@@ -1,7 +1,12 @@
 import { useMemo } from 'react'
 import { Amendment, Despesa } from '@/lib/mock-data'
-import { FinancialSummaryCard } from './FinancialSummaryCard'
+import { FinancialSummaryGroupCard } from './FinancialSummaryGroupCard'
 import { sumExecutedExpenses } from '@/lib/financial-calculations'
+import {
+  calculateResourceTotals,
+  getResourceBucket,
+  ResourceBucket,
+} from '@/lib/resource-classification'
 
 interface FinancialSummaryProps {
   amendments: Amendment[]
@@ -20,81 +25,80 @@ export const FinancialSummary = ({
       )
     }
 
-    // MAC Data
-    const macAmendments = amendments.filter(
-      (a) =>
-        a.tipo_recurso === 'INCREMENTO_MAC' || a.tipo_recurso === 'CUSTEIO_MAC',
-    )
-    const totalMac = macAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    const paidMac = calculateExecutedValue(macAmendments)
-    const pendingMac = Math.max(0, totalMac - paidMac)
-
-    // PAP Data
-    const papAmendments = amendments.filter(
-      (a) =>
-        a.tipo_recurso === 'INCREMENTO_PAP' || a.tipo_recurso === 'CUSTEIO_PAP',
-    )
-    const totalPap = papAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    const paidPap = calculateExecutedValue(papAmendments)
-    const pendingPap = Math.max(0, totalPap - paidPap)
-
-    // Equipamentos Data
-    const equipAmendments = amendments.filter(
-      (a) => a.tipo_recurso === 'EQUIPAMENTO',
-    )
-    const totalEquip = equipAmendments.reduce(
-      (sum, a) => sum + a.valor_total,
-      0,
-    )
-    const paidEquip = calculateExecutedValue(equipAmendments)
-    const pendingEquip = Math.max(0, totalEquip - paidEquip)
+    const totals = calculateResourceTotals(amendments)
+    const bucketSummary = (buckets: ResourceBucket[], total: number) => {
+      const paid = calculateExecutedValue(
+        amendments.filter((a) => buckets.includes(getResourceBucket(a.tipo_recurso))),
+      )
+      return { total, paid, pending: Math.max(0, total - paid) }
+    }
 
     return {
-      mac: { total: totalMac, paid: paidMac, pending: pendingMac },
-      pap: { total: totalPap, paid: paidPap, pending: pendingPap },
-      equip: { total: totalEquip, paid: paidEquip, pending: pendingEquip },
+      custeioMac: bucketSummary(['custeioMac'], totals.custeioMac),
+      custeioPap: bucketSummary(['custeioPap'], totals.custeioPap),
+      incrementoMac: bucketSummary(
+        ['incrementoMac'],
+        totals.incrementoMac,
+      ),
+      incrementoPap: bucketSummary(
+        ['incrementoPap'],
+        totals.incrementoPap,
+      ),
     }
   }, [amendments, despesas])
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2">
       <div
         className="animate-fade-in-up opacity-0"
         style={{ animationDelay: '250ms', animationFillMode: 'forwards' }}
       >
-        <FinancialSummaryCard
-          title="Incremento MAC"
-          totalValue={summaryData.mac.total}
-          paidValue={summaryData.mac.paid}
-          pendingValue={summaryData.mac.pending}
-          type="MAC"
-          to="/propostas/mac"
+        <FinancialSummaryGroupCard
+          title="Custeio"
+          subtitle="MAC e PAP separados"
+          type="custeio"
+          lines={[
+            {
+              label: 'MAC',
+              total: summaryData.custeioMac.total,
+              executed: summaryData.custeioMac.paid,
+              pending: summaryData.custeioMac.pending,
+              to: '/emendas?tipoRecurso=CUSTEIO_MAC_TOTAL',
+            },
+            {
+              label: 'PAP',
+              total: summaryData.custeioPap.total,
+              executed: summaryData.custeioPap.paid,
+              pending: summaryData.custeioPap.pending,
+              to: '/emendas?tipoRecurso=CUSTEIO_PAP_TOTAL',
+            },
+          ]}
         />
       </div>
       <div
         className="animate-fade-in-up opacity-0"
         style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
       >
-        <FinancialSummaryCard
-          title="Incremento PAP"
-          totalValue={summaryData.pap.total}
-          paidValue={summaryData.pap.paid}
-          pendingValue={summaryData.pap.pending}
-          type="PAP"
-          to="/propostas/pap"
-        />
-      </div>
-      <div
-        className="animate-fade-in-up opacity-0"
-        style={{ animationDelay: '350ms', animationFillMode: 'forwards' }}
-      >
-        <FinancialSummaryCard
-          title="Equipamentos"
-          totalValue={summaryData.equip.total}
-          paidValue={summaryData.equip.paid}
-          pendingValue={summaryData.equip.pending}
-          type="EQUIPAMENTO"
-          to="/emendas?tipoRecurso=EQUIPAMENTO"
+        <FinancialSummaryGroupCard
+          title="Incremento"
+          subtitle="MAC e PAP separados"
+          type="incremento"
+          lines={[
+            {
+              label: 'MAC',
+              total: summaryData.incrementoMac.total,
+              executed: summaryData.incrementoMac.paid,
+              pending: summaryData.incrementoMac.pending,
+              to: '/emendas?tipoRecurso=INCREMENTO_MAC',
+            },
+            {
+              label: 'PAP',
+              total: summaryData.incrementoPap.total,
+              executed: summaryData.incrementoPap.paid,
+              pending: summaryData.incrementoPap.pending,
+              to: '/emendas?tipoRecurso=INCREMENTO_PAP',
+            },
+          ]}
         />
       </div>
     </div>

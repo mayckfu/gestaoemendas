@@ -24,8 +24,15 @@ interface OfficialLimitCardProps {
     limite_mac: number
     limite_pap: number
     limite_capital: number
+    limite_incremento_mac?: number
+    limite_incremento_pap?: number
   } | null
-  consumed: { mac: number; pap: number; capital: number }
+  consumed: {
+    custeioMac: number
+    custeioPap: number
+    incrementoMac: number
+    incrementoPap: number
+  }
   isAdmin: boolean
   onUpdate: () => void
 }
@@ -41,7 +48,8 @@ export function OfficialLimitCard({
   const [isSaving, setIsSaving] = useState(false)
   const [mac, setMac] = useState(0)
   const [pap, setPap] = useState(0)
-  const [capital, setCapital] = useState(0)
+  const [incrementoMac, setIncrementoMac] = useState(0)
+  const [incrementoPap, setIncrementoPap] = useState(0)
   const { toast } = useToast()
   const { isPrivacyMode } = usePrivacy()
 
@@ -49,7 +57,8 @@ export function OfficialLimitCard({
     if (isOpen) {
       setMac(limitData?.limite_mac || 0)
       setPap(limitData?.limite_pap || 0)
-      setCapital(limitData?.limite_capital || 0)
+      setIncrementoMac(limitData?.limite_incremento_mac || 0)
+      setIncrementoPap(limitData?.limite_incremento_pap || 0)
     }
   }, [isOpen, limitData])
 
@@ -62,7 +71,8 @@ export function OfficialLimitCard({
           ano: parseInt(year),
           limite_mac: mac,
           limite_pap: pap,
-          limite_capital: capital,
+          limite_incremento_mac: incrementoMac,
+          limite_incremento_pap: incrementoPap,
           updated_at: new Date().toISOString(),
         })
 
@@ -83,7 +93,8 @@ export function OfficialLimitCard({
 
   const macLimit = limitData?.limite_mac || 0
   const papLimit = limitData?.limite_pap || 0
-  const capitalLimit = limitData?.limite_capital || 0
+  const incrementoMacLimit = limitData?.limite_incremento_mac || 0
+  const incrementoPapLimit = limitData?.limite_incremento_pap || 0
 
   const renderItem = (
     title: string,
@@ -168,11 +179,19 @@ export function OfficialLimitCard({
                   <MoneyInput id="pap" value={pap} onChange={setPap} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="capital">Limite CAPITAL</Label>
+                  <Label htmlFor="incrementoMac">Limite Incremento MAC</Label>
                   <MoneyInput
-                    id="capital"
-                    value={capital}
-                    onChange={setCapital}
+                    id="incrementoMac"
+                    value={incrementoMac}
+                    onChange={setIncrementoMac}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="incrementoPap">Limite Incremento PAP</Label>
+                  <MoneyInput
+                    id="incrementoPap"
+                    value={incrementoPap}
+                    onChange={setIncrementoPap}
                   />
                 </div>
               </div>
@@ -197,10 +216,21 @@ export function OfficialLimitCard({
           </Dialog>
         )}
       </CardHeader>
-      <CardContent className="p-4 md:p-6 grid gap-4 md:grid-cols-3">
-        {renderItem('MAC', macLimit, consumed.mac, 'bg-blue-500')}
-        {renderItem('PAP', papLimit, consumed.pap, 'bg-cyan-500')}
-        {renderItem('Capital', capitalLimit, consumed.capital, 'bg-purple-500')}
+      <CardContent className="p-4 md:p-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {renderItem('Custeio MAC', macLimit, consumed.custeioMac, 'bg-blue-500')}
+        {renderItem('Custeio PAP', papLimit, consumed.custeioPap, 'bg-cyan-500')}
+        {renderItem(
+          'Incremento MAC',
+          incrementoMacLimit,
+          consumed.incrementoMac,
+          'bg-indigo-500',
+        )}
+        {renderItem(
+          'Incremento PAP',
+          incrementoPapLimit,
+          consumed.incrementoPap,
+          'bg-purple-500',
+        )}
       </CardContent>
     </Card>
   )

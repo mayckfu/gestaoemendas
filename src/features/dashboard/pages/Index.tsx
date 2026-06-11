@@ -20,6 +20,7 @@ import { amendmentService } from '@/services/amendmentService'
 import { dashboardService } from '@/services/dashboardService'
 import { isExecutedExpense } from '@/lib/financial-calculations'
 import { calculateParliamentaryDistribution } from '@/lib/parliamentary-distribution'
+import { calculateResourceTotals } from '@/lib/resource-classification'
 
 const Index = () => {
   const { toast } = useToast()
@@ -150,26 +151,7 @@ const Index = () => {
   }, [amendments, detailedAmendments, selectedMonth])
 
   const consumedTotals = useMemo(() => {
-    // Use detailedAmendments to ensure we have all properties needed
-    const mac = detailedAmendments
-      .filter(
-        (a) =>
-          a.tipo_recurso === 'INCREMENTO_MAC' ||
-          a.tipo_recurso === 'CUSTEIO_MAC',
-      )
-      .reduce((sum, a) => sum + a.valor_total, 0)
-    const pap = detailedAmendments
-      .filter(
-        (a) =>
-          a.tipo_recurso === 'INCREMENTO_PAP' ||
-          a.tipo_recurso === 'CUSTEIO_PAP',
-      )
-      .reduce((sum, a) => sum + a.valor_total, 0)
-    const capital = detailedAmendments
-      .filter((a) => a.tipo_recurso === 'EQUIPAMENTO')
-      .reduce((sum, a) => sum + a.valor_total, 0)
-
-    return { mac, pap, capital }
+    return calculateResourceTotals(detailedAmendments)
   }, [detailedAmendments])
 
   const dashboardData = useMemo(() => {
