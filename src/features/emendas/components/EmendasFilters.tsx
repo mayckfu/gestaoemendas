@@ -132,8 +132,6 @@ export const EmendasFilters = ({
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="MAC">MAC (Todos)</SelectItem>
               <SelectItem value="PAP">PAP (Todos)</SelectItem>
-              <SelectItem value="CUSTEIO_MAC_TOTAL">Custeio MAC</SelectItem>
-              <SelectItem value="CUSTEIO_PAP_TOTAL">Custeio PAP</SelectItem>
               {Object.entries(TipoRecurso).map(([key, value]) => (
               <SelectItem key={key} value={key}>
                 {value}

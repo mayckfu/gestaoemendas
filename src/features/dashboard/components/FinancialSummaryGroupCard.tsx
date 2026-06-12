@@ -15,7 +15,7 @@ type SummaryLine = {
 interface FinancialSummaryGroupCardProps {
   title: string
   subtitle: string
-  type: 'custeio' | 'incremento'
+  type: 'custeio' | 'incremento' | 'equipamento'
   lines: SummaryLine[]
 }
 
@@ -28,11 +28,18 @@ export function FinancialSummaryGroupCard({
   const navigate = useNavigate()
   const { isPrivacyMode } = usePrivacy()
   const Icon = type === 'custeio' ? Wallet : Box
-  const colorClass = type === 'custeio' ? 'bg-blue-600' : 'bg-purple-600'
+  const colorClass =
+    type === 'custeio'
+      ? 'bg-blue-600'
+      : type === 'incremento'
+        ? 'bg-purple-600'
+        : 'bg-emerald-600'
   const iconClass =
     type === 'custeio'
       ? 'bg-blue-50 text-blue-600'
-      : 'bg-purple-50 text-purple-600'
+      : type === 'incremento'
+        ? 'bg-purple-50 text-purple-600'
+        : 'bg-emerald-50 text-emerald-600'
   const total = lines.reduce((sum, line) => sum + line.total, 0)
   const executed = lines.reduce((sum, line) => sum + line.executed, 0)
   const pct = total > 0 ? (executed / total) * 100 : 0

@@ -44,11 +44,15 @@ export const FinancialSummary = ({
         ['incrementoPap'],
         totals.incrementoPap,
       ),
+      equipamento: bucketSummary(
+        ['equipamentoLegado'],
+        totals.equipamentoLegado,
+      ),
     }
   }, [amendments, despesas])
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-3">
       <div
         className="animate-fade-in-up opacity-0"
         style={{ animationDelay: '250ms', animationFillMode: 'forwards' }}
@@ -63,14 +67,14 @@ export const FinancialSummary = ({
               total: summaryData.custeioMac.total,
               executed: summaryData.custeioMac.paid,
               pending: summaryData.custeioMac.pending,
-              to: '/emendas?tipoRecurso=CUSTEIO_MAC_TOTAL',
+              to: '/emendas?tipoRecurso=CUSTEIO_MAC',
             },
             {
               label: 'PAP',
               total: summaryData.custeioPap.total,
               executed: summaryData.custeioPap.paid,
               pending: summaryData.custeioPap.pending,
-              to: '/emendas?tipoRecurso=CUSTEIO_PAP_TOTAL',
+              to: '/emendas?tipoRecurso=CUSTEIO_PAP',
             },
           ]}
         />
@@ -97,6 +101,25 @@ export const FinancialSummary = ({
               executed: summaryData.incrementoPap.paid,
               pending: summaryData.incrementoPap.pending,
               to: '/emendas?tipoRecurso=INCREMENTO_PAP',
+            },
+          ]}
+        />
+      </div>
+      <div
+        className="animate-fade-in-up opacity-0"
+        style={{ animationDelay: '350ms', animationFillMode: 'forwards' }}
+      >
+        <FinancialSummaryGroupCard
+          title="Equipamento"
+          subtitle="Investimento legado"
+          type="equipamento"
+          lines={[
+            {
+              label: 'Equipamento',
+              total: summaryData.equipamento.total,
+              executed: summaryData.equipamento.paid,
+              pending: summaryData.equipamento.pending,
+              to: '/emendas?tipoRecurso=EQUIPAMENTO',
             },
           ]}
         />

@@ -357,6 +357,22 @@ const EmendasListPage = () => {
     [searchParams],
   )
 
+  const pageTitle = useMemo(() => {
+    const titles: Record<string, string> = {
+      CUSTEIO_MAC: 'Custeio MAC',
+      CUSTEIO_MAC_TOTAL: 'Custeio MAC',
+      CUSTEIO_PAP: 'Custeio PAP',
+      CUSTEIO_PAP_TOTAL: 'Custeio PAP',
+      INCREMENTO_MAC: 'Incremento MAC',
+      INCREMENTO_PAP: 'Incremento PAP',
+      EQUIPAMENTO: 'Equipamento',
+      MAC: 'Emendas MAC',
+      PAP: 'Emendas PAP',
+    }
+
+    return titles[filters.tipoRecurso] ?? 'Lista de Emendas'
+  }, [filters.tipoRecurso])
+
   const handleFilterChange = useCallback(
     (newFilters: Partial<FiltersState>) => {
       const newParams = new URLSearchParams(searchParams)
@@ -585,17 +601,9 @@ const EmendasListPage = () => {
             } else if (filters.tipoRecurso === 'PAP') {
               if (!isPapResource(amendment.tipo_recurso)) return false
             } else if (filters.tipoRecurso === 'CUSTEIO_MAC_TOTAL') {
-              if (
-                amendment.tipo_recurso !== 'INCREMENTO_MAC' &&
-                amendment.tipo_recurso !== 'CUSTEIO_MAC'
-              )
-                return false
+              if (amendment.tipo_recurso !== 'CUSTEIO_MAC') return false
             } else if (filters.tipoRecurso === 'CUSTEIO_PAP_TOTAL') {
-              if (
-                amendment.tipo_recurso !== 'INCREMENTO_PAP' &&
-                amendment.tipo_recurso !== 'CUSTEIO_PAP'
-              )
-                return false
+              if (amendment.tipo_recurso !== 'CUSTEIO_PAP') return false
             } else if (amendment.tipo_recurso !== filters.tipoRecurso) {
               return false
             }
@@ -755,7 +763,7 @@ const EmendasListPage = () => {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-200">
-          Lista de Emendas
+          {pageTitle}
         </h1>
         <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:w-auto">
           <PeriodSelector
