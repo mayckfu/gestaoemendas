@@ -11,8 +11,9 @@ import {
 import { Loader2, FileText, Hash } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useDebounce } from '@/hooks/use-debounce'
-import { formatCurrencyBRL } from '@/lib/utils'
+import { formatCurrencyBRL, getCurrencySearchValues } from '@/lib/utils'
 import { usePrivacy } from '@/contexts/PrivacyContext'
+import { useYear } from '@/contexts/YearContext'
 
 interface SearchResult {
   id: string
@@ -36,6 +37,7 @@ export const GlobalSearch = ({
 }) => {
   const navigate = useNavigate()
   const { isPrivacyMode } = usePrivacy()
+  const { selectedYear } = useYear()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -71,11 +73,17 @@ export const GlobalSearch = ({
     setIsLoading(true)
     try {
       // Use the RPC function for format-agnostic search
-      const { data, error } = await supabase
+      let searchQuery = supabase
         .rpc('search_emendas_global', { search_term: searchTerm })
         .select(
           'id, numero_emenda, numero_proposta, parlamentar, autor, valor_total, objeto_emenda, situacao, status_interno, portaria',
         )
+
+      if (selectedYear !== 'all') {
+        searchQuery = searchQuery.eq('ano_exercicio', parseInt(selectedYear))
+      }
+
+      const { data, error } = await searchQuery
 
       if (error) throw error
 
@@ -86,7 +94,7 @@ export const GlobalSearch = ({
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [selectedYear])
 
   useEffect(() => {
     searchEmendas(debouncedQuery)
@@ -121,7 +129,7 @@ export const GlobalSearch = ({
             {results.map((result) => (
               <CommandItem
                 key={result.id}
-                value={`${result.parlamentar} ${result.numero_emenda} ${result.numero_proposta} ${result.portaria} ${result.objeto_emenda}`}
+                value={`${result.parlamentar} ${result.numero_emenda} ${result.numero_proposta} ${result.portaria} ${result.objeto_emenda} ${formatCurrencyBRL(result.valor_total)} ${getCurrencySearchValues(result.valor_total).join(' ')}`}
                 onSelect={() => handleSelect(result.id)}
                 className="flex items-center gap-3 p-3 cursor-pointer"
               >
