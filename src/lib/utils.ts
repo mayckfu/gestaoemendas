@@ -35,6 +35,30 @@ export function parseCurrencyBRL(value: string): number {
   return isNaN(number) ? 0 : number
 }
 
+export function normalizeSearchText(value: string | number | null | undefined) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+export function normalizeDigits(value: string | number | null | undefined) {
+  return String(value ?? '').replace(/\D/g, '')
+}
+
+export function getCurrencySearchValues(value: number) {
+  const safeValue = Number.isFinite(value) ? value : 0
+  const cents = Math.round(safeValue * 100).toString()
+  const integer = Math.trunc(safeValue).toString()
+
+  return [
+    normalizeSearchText(formatCurrencyBRL(safeValue)),
+    normalizeSearchText(safeValue.toLocaleString('pt-BR')),
+    cents,
+    integer,
+  ]
+}
+
 export function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes'
 

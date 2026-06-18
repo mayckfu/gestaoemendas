@@ -22,7 +22,13 @@ import { parse, format, parseISO, getMonth } from 'date-fns'
 import { Amendment, SituacaoOficial, TipoEmenda } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatCurrencyBRL, normalizeNameKey } from '@/lib/utils'
+import {
+  formatCurrencyBRL,
+  getCurrencySearchValues,
+  normalizeDigits,
+  normalizeNameKey,
+  normalizeSearchText,
+} from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -550,9 +556,10 @@ const EmendasListPage = () => {
       .filter((amendment) => {
         // Month Filter
         if (monthParam !== 'all') {
-          if (!amendment.created_at) return false
+          const dateForMonth = amendment.data_repasse || amendment.created_at
+          if (!dateForMonth) return false
           const month = parseInt(monthParam, 10)
-          const amendmentDate = parseISO(amendment.created_at)
+          const amendmentDate = parseISO(dateForMonth)
           if (getMonth(amendmentDate) + 1 !== month) {
             return false
           }
@@ -560,24 +567,36 @@ const EmendasListPage = () => {
 
         // Text Search (Global Search functionality)
         if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase()
-          const matchesEmenda = amendment.numero_emenda
-            .toLowerCase()
-            .includes(searchLower)
+          const searchLower = normalizeSearchText(searchTerm)
+          const searchDigits = normalizeDigits(searchTerm)
+          const matchesEmenda = normalizeSearchText(
+            amendment.numero_emenda,
+          ).includes(searchLower)
           const matchesProposta =
-            amendment.numero_proposta?.toLowerCase().includes(searchLower) ||
+            normalizeSearchText(amendment.numero_proposta).includes(
+              searchLower,
+            ) ||
             false
-          const matchesParlamentar = amendment.parlamentar
-            .toLowerCase()
-            .includes(searchLower)
+          const matchesParlamentar = normalizeSearchText(
+            amendment.parlamentar,
+          ).includes(searchLower)
           const matchesPortaria =
-            amendment.portaria?.toLowerCase().includes(searchLower) || false
+            normalizeSearchText(amendment.portaria).includes(searchLower) ||
+            false
+          const matchesValor = getCurrencySearchValues(
+            amendment.valor_total,
+          ).some(
+            (value) =>
+              value.includes(searchLower) ||
+              (searchDigits.length > 0 && value.includes(searchDigits)),
+          )
 
           if (
             !matchesEmenda &&
             !matchesProposta &&
             !matchesParlamentar &&
-            !matchesPortaria
+            !matchesPortaria &&
+            !matchesValor
           )
             return false
         }
@@ -724,7 +743,7 @@ const EmendasListPage = () => {
     } else {
       toast({
         title: 'Erro na exportação',
-        description: 'Verifique se o arquivo template.docx existe na pasta public.',
+        description: 'Nao foi possivel gerar o documento Word para os filtros atuais.',
         variant: 'destructive',
       })
     }
