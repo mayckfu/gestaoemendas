@@ -47,7 +47,7 @@ export function KPICards({
         </CardContent>
       </Card>
 
-      {/* Executed Value Card */}
+      {/* Paid Value Card */}
       <Card
         className="overflow-hidden glass-card animate-fade-in-up opacity-0"
         style={{ animationDelay: '150ms', animationFillMode: 'forwards' }}
@@ -59,7 +59,7 @@ export function KPICards({
           <div className="flex flex-col gap-1 relative z-10">
             <div className="flex justify-between items-center pr-8 mb-2">
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                Executado
+                Pago
               </p>
             </div>
             <h2 className="text-3xl font-extrabold tabular-nums text-foreground tracking-tight">

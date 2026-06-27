@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Amendment, Despesa } from '@/lib/mock-data'
 import { FinancialSummaryGroupCard } from './FinancialSummaryGroupCard'
-import { sumExecutedExpenses } from '@/lib/financial-calculations'
+import { getPaidAmountForAmendment } from '@/lib/financial-calculations'
 import {
   calculateResourceTotals,
   getResourceBucket,
@@ -19,9 +19,14 @@ export const FinancialSummary = ({
 }: FinancialSummaryProps) => {
   const summaryData = useMemo(() => {
     const calculateExecutedValue = (targetAmendments: Amendment[]) => {
-      const ids = new Set(targetAmendments.map((amendment) => amendment.id))
-      return sumExecutedExpenses(
-        despesas.filter((despesa) => despesa.emenda_id && ids.has(despesa.emenda_id)),
+      return targetAmendments.reduce(
+        (sum, amendment) =>
+          sum +
+          getPaidAmountForAmendment(
+            amendment,
+            despesas.filter((despesa) => despesa.emenda_id === amendment.id),
+          ),
+        0,
       )
     }
 

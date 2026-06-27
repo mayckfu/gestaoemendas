@@ -18,7 +18,10 @@ import { useYear } from '@/contexts/YearContext'
 import { isVisitorActive } from '@/lib/visitor'
 import { amendmentService } from '@/services/amendmentService'
 import { dashboardService } from '@/services/dashboardService'
-import { isExecutedExpense } from '@/lib/financial-calculations'
+import {
+  getPaidAmountForAmendment,
+  isExecutedExpense,
+} from '@/lib/financial-calculations'
 import { calculateParliamentaryDistribution } from '@/lib/parliamentary-distribution'
 import { calculateResourceTotals } from '@/lib/resource-classification'
 
@@ -162,10 +165,15 @@ const Index = () => {
     } = periodFilteredData
 
     const totalValor = fAmendments.reduce((sum, a) => sum + a.valor_total, 0)
-    // Synchronized 'Executed' value: only Liquidated/Paid expenses
-    const totalGasto = fDespesas
-      .filter(isExecutedExpense)
-      .reduce((sum, d) => sum + d.valor, 0)
+    const totalGasto = fAmendments.reduce(
+      (sum, amendment) =>
+        sum +
+        getPaidAmountForAmendment(
+          amendment,
+          fDespesas.filter((despesa) => despesa.emenda_id === amendment.id),
+        ),
+      0,
+    )
     const gastoPorResponsavelData = calculateParliamentaryDistribution(fAmendments)
     const activeLegislators = gastoPorResponsavelData.length
 
