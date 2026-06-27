@@ -79,7 +79,7 @@ export function FinancialSummaryGroupCard({
       <CardContent className="p-4 sm:p-5 space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-semibold uppercase tracking-wide">
-            <span className="text-muted-foreground">Execução</span>
+            <span className="text-muted-foreground">Pago</span>
             <span className="text-brand-700">{formatPercent(pct)}</span>
           </div>
           <div className="h-2.5 w-full bg-neutral-100 rounded-full overflow-hidden">
@@ -105,7 +105,7 @@ export function FinancialSummaryGroupCard({
                 <div>
                   <p className="font-bold text-neutral-900">{line.label}</p>
                   <p className="text-xs text-muted-foreground">
-                    Executado: {formatCurrencyBRL(line.executed, isPrivacyMode)}
+                    Pago: {formatCurrencyBRL(line.executed, isPrivacyMode)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-right">

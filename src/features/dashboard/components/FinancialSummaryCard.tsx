@@ -54,8 +54,8 @@ export const FinancialSummaryCard = ({
   paidValue,
   pendingValue,
   type,
-  progressLabel = 'Execução',
-  paidLabel = 'Executado',
+  progressLabel = 'Pago',
+  paidLabel = 'Pago',
   to,
 }: FinancialSummaryCardProps) => {
   const navigate = useNavigate()
