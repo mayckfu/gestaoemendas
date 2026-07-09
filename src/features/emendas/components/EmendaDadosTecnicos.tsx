@@ -10,15 +10,13 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { DetailedAmendment, TipoEmenda, TipoRecurso } from '@/lib/mock-data'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Edit2, Save, X, Info } from 'lucide-react'
+  DetailedAmendment,
+  NaturezaDespesaItem,
+  TipoEmenda,
+  TipoRecurso,
+} from '@/lib/mock-data'
+import { Edit2, Save, X, Info, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { MoneyInput } from '@/components/ui/money-input'
@@ -35,6 +33,61 @@ const NATUREZAS_DESPESA = [
   { value: '33.90.32 - Material de Distribuição Gratuita', label: '33.90.32 - Material de Distribuição Gratuita' },
   { value: 'Múltiplas Naturezas', label: 'Múltiplas Naturezas' },
 ]
+
+const normalizeNaturezasDespesa = (
+  items?: unknown,
+  fallbackNatureza?: string | null,
+  fallbackValor?: number | null,
+): NaturezaDespesaItem[] => {
+  if (Array.isArray(items)) {
+    return items
+      .map((item: any) => ({
+        natureza: String(item?.natureza || '').trim(),
+        valor: Number(item?.valor || 0),
+      }))
+      .filter((item) => item.natureza || item.valor > 0)
+  }
+
+  if (fallbackNatureza?.trim()) {
+    return [
+      {
+        natureza: fallbackNatureza.trim(),
+        valor: Number(fallbackValor || 0),
+      },
+    ]
+  }
+
+  return []
+}
+
+const getNaturezasLegacyText = (items: NaturezaDespesaItem[]) =>
+  items
+    .map((item) => item.natureza.trim())
+    .filter(Boolean)
+    .join('; ')
+
+const getCompletedRepasses = (emenda: DetailedAmendment) =>
+  [...(emenda.repasses || [])]
+    .filter((repasse) => repasse.status === 'REPASSADO')
+    .sort(
+      (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+    )
+
+const getPaidRepasseDates = (emenda: DetailedAmendment) => {
+  const dates = getCompletedRepasses(emenda)
+    .map((repasse) => (repasse.data ? formatDisplayDate(repasse.data) : null))
+    .filter(Boolean)
+
+  return dates.length > 0 ? dates.join(' | ') : null
+}
+
+const getPaidRepasseOrders = (emenda: DetailedAmendment) => {
+  const orders = getCompletedRepasses(emenda)
+    .map((repasse) => repasse.ordem_bancaria?.trim())
+    .filter(Boolean)
+
+  return orders.length > 0 ? orders.join(' | ') : null
+}
 
 const getNaturezaPadrao = (tipoRecurso?: string): string => {
   if (!tipoRecurso) return ''
@@ -89,6 +142,62 @@ const ReadOnlyField = ({
   </div>
 )
 
+const NaturezasDespesaReadOnly = ({
+  items,
+  fallbackNatureza,
+  fallbackValor,
+  isPrivacyMode,
+}: {
+  items?: NaturezaDespesaItem[]
+  fallbackNatureza?: string | null
+  fallbackValor?: number | null
+  isPrivacyMode: boolean
+}) => {
+  const naturezas = normalizeNaturezasDespesa(
+    items,
+    fallbackNatureza,
+    fallbackValor,
+  )
+  const total = naturezas.reduce((sum, item) => sum + Number(item.valor || 0), 0)
+
+  return (
+    <div className="col-span-full rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 dark:border-neutral-800 dark:bg-neutral-900/30">
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <dt className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
+          Natureza da Despesa
+        </dt>
+        {naturezas.length > 0 && (
+          <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+            Total: {formatCurrencyBRL(total, isPrivacyMode)}
+          </span>
+        )}
+      </div>
+
+      {naturezas.length === 0 ? (
+        <dd className="text-sm font-medium text-muted-foreground/50 italic">
+          -
+        </dd>
+      ) : (
+        <dd className="grid gap-2">
+          {naturezas.map((item, index) => (
+            <div
+              key={`${item.natureza}-${index}`}
+              className="flex flex-col gap-1 rounded-md border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-background sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                {item.natureza || 'Natureza não informada'}
+              </span>
+              <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
+                {formatCurrencyBRL(item.valor || 0, isPrivacyMode)}
+              </span>
+            </div>
+          ))}
+        </dd>
+      )}
+    </div>
+  )
+}
+
 export const EmendaDadosTecnicos = forwardRef<
   EmendaDadosTecnicosHandles,
   EmendaDadosTecnicosProps
@@ -102,7 +211,14 @@ export const EmendaDadosTecnicos = forwardRef<
   const canEdit = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
 
   useEffect(() => {
-    setFormData(emenda)
+    setFormData({
+      ...emenda,
+      naturezas_despesa: normalizeNaturezasDespesa(
+        emenda.naturezas_despesa,
+        emenda.natureza,
+        emenda.valor_total,
+      ),
+    })
   }, [emenda])
 
   useImperativeHandle(ref, () => ({
@@ -124,8 +240,56 @@ export const EmendaDadosTecnicos = forwardRef<
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const naturezasDespesa = normalizeNaturezasDespesa(
+    formData.naturezas_despesa,
+    formData.natureza,
+    emenda.valor_total,
+  )
+
+  const updateNaturezasDespesa = (items: NaturezaDespesaItem[]) => {
+    const normalizedItems = normalizeNaturezasDespesa(items)
+    setFormData((prev) => ({
+      ...prev,
+      naturezas_despesa: normalizedItems,
+      natureza: getNaturezasLegacyText(normalizedItems),
+    }))
+  }
+
+  const handleNaturezaDespesaChange = (
+    index: number,
+    field: keyof NaturezaDespesaItem,
+    value: string | number,
+  ) => {
+    const nextItems =
+      naturezasDespesa.length > 0
+        ? [...naturezasDespesa]
+        : [{ natureza: '', valor: 0 }]
+    nextItems[index] = {
+      ...nextItems[index],
+      [field]: field === 'valor' ? Number(value || 0) : String(value),
+    }
+    updateNaturezasDespesa(nextItems)
+  }
+
+  const handleAddNaturezaDespesa = () => {
+    updateNaturezasDespesa([...naturezasDespesa, { natureza: '', valor: 0 }])
+  }
+
+  const handleRemoveNaturezaDespesa = (index: number) => {
+    updateNaturezasDespesa(naturezasDespesa.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const handleSave = () => {
-    onEmendaChange({ ...emenda, ...formData } as DetailedAmendment)
+    const normalizedNaturezas = normalizeNaturezasDespesa(
+      formData.naturezas_despesa,
+    )
+
+    onEmendaChange({
+      ...emenda,
+      ...formData,
+      naturezas_despesa: normalizedNaturezas,
+      natureza: getNaturezasLegacyText(normalizedNaturezas),
+    } as DetailedAmendment)
     setIsEditing(false)
   }
 
@@ -185,23 +349,102 @@ export const EmendaDadosTecnicos = forwardRef<
                   placeholder="Ex: 12345/2024"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="natureza">Natureza da Despesa</Label>
-                <Select
-                  value={formData.natureza || getNaturezaPadrao(formData.tipo_recurso)}
-                  onValueChange={(val) => handleChange('natureza', val)}
-                >
-                  <SelectTrigger id="natureza">
-                    <SelectValue placeholder="Selecione a natureza..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NATUREZAS_DESPESA.map((n) => (
-                      <SelectItem key={n.value} value={n.value}>
-                        {n.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3 rounded-lg border bg-muted/20 p-4 md:col-span-2 lg:col-span-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Label htmlFor="natureza-0">Naturezas da Despesa</Label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Informe manualmente cada natureza e o valor previsto para
+                      execução.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddNaturezaDespesa}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar
+                  </Button>
+                </div>
+
+                <datalist id="naturezas-despesa-sugestoes">
+                  {NATUREZAS_DESPESA.map((n) => (
+                    <option key={n.value} value={n.value} />
+                  ))}
+                </datalist>
+
+                <div className="space-y-2">
+                  {(naturezasDespesa.length > 0
+                    ? naturezasDespesa
+                    : [{ natureza: '', valor: 0 }]
+                  ).map((item, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 gap-2 rounded-md border bg-background p-3 sm:grid-cols-[1fr_180px_auto] sm:items-end"
+                    >
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`natureza-${index}`}>
+                          Tipo da natureza
+                        </Label>
+                        <Input
+                          id={`natureza-${index}`}
+                          list="naturezas-despesa-sugestoes"
+                          value={item.natureza}
+                          onChange={(e) =>
+                            handleNaturezaDespesaChange(
+                              index,
+                              'natureza',
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Ex: 33.90.30 - Material de Consumo"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`natureza-valor-${index}`}>
+                          Valor
+                        </Label>
+                        <MoneyInput
+                          id={`natureza-valor-${index}`}
+                          value={item.valor || 0}
+                          onChange={(value) =>
+                            handleNaturezaDespesaChange(
+                              index,
+                              'valor',
+                              value,
+                            )
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="justify-self-end text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleRemoveNaturezaDespesa(index)}
+                        disabled={naturezasDespesa.length <= 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Remover natureza</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end border-t pt-3 text-sm font-semibold">
+                  Total das naturezas:{' '}
+                  <span className="ml-2 text-primary">
+                    {formatCurrencyBRL(
+                      naturezasDespesa.reduce(
+                        (sum, item) => sum + Number(item.valor || 0),
+                        0,
+                      ),
+                      isPrivacyMode,
+                    )}
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="meta_operacional">Meta Operacional</Label>
@@ -556,9 +799,11 @@ export const EmendaDadosTecnicos = forwardRef<
             <div className="col-span-full border-t border-neutral-100 dark:border-neutral-800 my-2" />
 
             {/* Editable Technical Fields Display */}
-            <ReadOnlyField
-              label="Natureza da Despesa"
-              value={emenda.natureza}
+            <NaturezasDespesaReadOnly
+              items={emenda.naturezas_despesa}
+              fallbackNatureza={emenda.natureza}
+              fallbackValor={emenda.valor_total}
+              isPrivacyMode={isPrivacyMode}
             />
             <ReadOnlyField
               label="Meta Operacional"
@@ -581,6 +826,14 @@ export const EmendaDadosTecnicos = forwardRef<
                   ? formatDisplayDate(emenda.data_repasse)
                   : null
               }
+            />
+            <ReadOnlyField
+              label="Data do Repasse Pago"
+              value={getPaidRepasseDates(emenda)}
+            />
+            <ReadOnlyField
+              label="Ordem Bancária"
+              value={getPaidRepasseOrders(emenda)}
             />
 
             <ReadOnlyField

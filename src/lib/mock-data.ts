@@ -62,6 +62,11 @@ export type TipoEmendaEnum = keyof typeof TipoEmenda
 export type AuditCategoryEnum =
   (typeof AuditCategories)[keyof typeof AuditCategories]
 
+export type NaturezaDespesaItem = {
+  natureza: string
+  valor: number
+}
+
 export type Amendment = {
   id: string
   tipo: TipoEmendaEnum
@@ -94,6 +99,7 @@ export type Amendment = {
   origem?: 'FEDERAL' | 'ESTADUAL'
   // Technical fields (optional in base list)
   natureza?: string
+  naturezas_despesa?: NaturezaDespesaItem[]
   objeto_emenda?: string
   meta_operacional?: string
   destino_recurso?: string

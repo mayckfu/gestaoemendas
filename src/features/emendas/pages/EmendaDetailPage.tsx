@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useLocation, useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Loader2,
@@ -48,11 +48,22 @@ import { amendmentService } from '@/services/amendmentService'
 import { getSignedUrl } from '@/lib/supabase/storage'
 import { cn } from '@/lib/utils'
 
+const LAST_EMENDAS_LIST_URL_KEY = 'emendas_last_list_url'
+
 const EmendaDetailPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { toast } = useToast()
   const { checkPermission } = useAuth()
+  const returnTo =
+    (location.state as { from?: string } | null)?.from ||
+    sessionStorage.getItem(LAST_EMENDAS_LIST_URL_KEY) ||
+    '/emendas'
+
+  const handleBackToList = () => {
+    navigate(returnTo)
+  }
 
   // Default to 'technical' as usually expected in detail views, or 'planning'
   const [activeTab, setActiveTab] = useState('technical')
@@ -164,6 +175,7 @@ const EmendaDetailPage = () => {
       if (isVisitorActive()) {
         const result = visitorUpdateEmenda(emendaData.id, {
           natureza: updatedEmenda.natureza,
+          naturezas_despesa: updatedEmenda.naturezas_despesa || [],
           objeto_emenda: updatedEmenda.objeto_emenda,
           meta_operacional: updatedEmenda.meta_operacional,
           destino_recurso: updatedEmenda.destino_recurso,
@@ -196,6 +208,7 @@ const EmendaDetailPage = () => {
         .from('emendas')
         .update({
           natureza: updatedEmenda.natureza,
+          naturezas_despesa: updatedEmenda.naturezas_despesa || [],
           objeto_emenda: updatedEmenda.objeto_emenda,
           meta_operacional: updatedEmenda.meta_operacional,
           destino_recurso: updatedEmenda.destino_recurso,
@@ -334,7 +347,7 @@ const EmendaDetailPage = () => {
         <h2 className="text-xl font-semibold">
           {error || 'Emenda não encontrada'}
         </h2>
-        <Button onClick={() => navigate('/emendas')}>
+        <Button onClick={handleBackToList}>
           Voltar para a lista
         </Button>
       </div>
@@ -357,7 +370,7 @@ const EmendaDetailPage = () => {
           variant="outline"
           size="icon"
           className="h-8 w-8"
-          onClick={() => navigate('/emendas')}
+          onClick={handleBackToList}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>

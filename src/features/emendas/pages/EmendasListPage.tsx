@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   PlusCircle,
   FileDown,
@@ -114,6 +114,7 @@ import { isMacResource, isPapResource } from '@/lib/resource-classification'
 
 const ITEMS_PER_PAGE = 10
 const ROW_NAVIGATION_LOCK_KEY = 'emendas_row_navigation_locked'
+const LAST_EMENDAS_LIST_URL_KEY = 'emendas_last_list_url'
 
 const getPendencias = (amendment: Amendment) => {
   const pendencias: string[] = []
@@ -247,6 +248,7 @@ const getResourceLabel = (type?: string | null) =>
 
 const EmendasListPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { toast } = useToast()
   const { checkPermission } = useAuth()
   const { isPrivacyMode } = usePrivacy()
@@ -281,6 +283,11 @@ const EmendasListPage = () => {
   const canEdit = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
   const canDelete = checkPermission(['ADMIN', 'GESTOR'])
   const canCreate = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
+  const currentListUrl = `${location.pathname}${location.search}`
+
+  useEffect(() => {
+    sessionStorage.setItem(LAST_EMENDAS_LIST_URL_KEY, currentListUrl)
+  }, [currentListUrl])
 
   useEffect(() => {
     localStorage.setItem(
@@ -294,7 +301,7 @@ const EmendasListPage = () => {
       return
     }
 
-    navigate(`/emenda/${id}`)
+    navigate(`/emenda/${id}`, { state: { from: currentListUrl } })
   }
 
   const fetchAmendments = useCallback(async () => {
@@ -1071,7 +1078,11 @@ const EmendasListPage = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                              onClick={() => navigate(`/emenda/${amendment.id}`)}
+                              onClick={() =>
+                                navigate(`/emenda/${amendment.id}`, {
+                                  state: { from: currentListUrl },
+                                })
+                              }
                             >
                               <Eye className="h-4 w-4" />
                               <span className="sr-only">Ver Detalhes</span>
@@ -1286,7 +1297,9 @@ const EmendasListPage = () => {
                                       className="h-8 w-8 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                                       onClick={(e) => {
                                         e.stopPropagation()
-                                        navigate(`/emenda/${amendment.id}`)
+                                        navigate(`/emenda/${amendment.id}`, {
+                                          state: { from: currentListUrl },
+                                        })
                                       }}
                                     >
                                       <Eye className="h-4 w-4" />

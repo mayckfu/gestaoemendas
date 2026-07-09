@@ -395,6 +395,7 @@ export type Database = {
           id: string
           meta_operacional: string | null
           natureza: string | null
+          naturezas_despesa: Json
           numero_emenda: string
           numero_proposta: string | null
           objeto_emenda: string | null
@@ -432,6 +433,7 @@ export type Database = {
           id?: string
           meta_operacional?: string | null
           natureza?: string | null
+          naturezas_despesa?: Json
           numero_emenda: string
           numero_proposta?: string | null
           objeto_emenda?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           id?: string
           meta_operacional?: string | null
           natureza?: string | null
+          naturezas_despesa?: Json
           numero_emenda?: string
           numero_proposta?: string | null
           objeto_emenda?: string | null
