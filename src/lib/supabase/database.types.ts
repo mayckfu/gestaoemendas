@@ -964,6 +964,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_login_email: {
+        Args: { login_input: string }
+        Returns: string | null
+      }
       search_emendas_global: {
         Args: { search_term: string }
         Returns: {

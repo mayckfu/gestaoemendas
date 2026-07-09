@@ -42,11 +42,13 @@ import { useToast } from '@/components/ui/use-toast'
 interface UsersTableProps {
   users: User[]
   cargos: Cargo[]
-  onUpdateUser: (user: User) => void
-  onCreateUser: (user: Omit<User, 'id' | 'created_at'>) => void
+  onUpdateUser: (user: User) => boolean | Promise<boolean>
+  onCreateUser: (user: Omit<User, 'id' | 'created_at'>) => boolean | Promise<boolean>
   onDeleteUser?: (userId: string) => void
   onResetPassword: (email: string) => void
 }
+
+const getCpfDigits = (cpf?: string) => cpf?.replace(/\D/g, '') || ''
 
 export const UsersTable = ({
   users,
@@ -116,7 +118,7 @@ export const UsersTable = ({
     onResetPassword(user.email)
   }
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = async (data: any) => {
     // Check for email uniqueness
     const emailExists = users.some(
       (u) =>
@@ -133,16 +135,33 @@ export const UsersTable = ({
       return
     }
 
+    const cpfDigits = getCpfDigits(data.cpf)
+    const cpfExists =
+      cpfDigits &&
+      users.some(
+        (u) => getCpfDigits(u.cpf) === cpfDigits && u.id !== editingUser?.id,
+      )
+
+    if (cpfExists) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Este CPF jÃ¡ estÃ¡ em uso por outro usuÃ¡rio.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
     const { password, confirmPassword: _confirmPassword, ...userData } = data
+    const normalizedUserData = { ...userData, cpf: cpfDigits }
 
     if (editingUser) {
-      const updatedUser = { ...editingUser, ...userData }
+      const updatedUser = { ...editingUser, ...normalizedUserData }
       if (password) {
         updatedUser.password = password
       }
-      onUpdateUser(updatedUser)
+      return onUpdateUser(updatedUser)
     } else {
-      onCreateUser({ ...userData, password })
+      return onCreateUser({ ...normalizedUserData, password })
     }
   }
 

@@ -106,7 +106,7 @@ const AdminPage = () => {
 
   const handleUpdateUser = async (updatedUser: User) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           name: updatedUser.name,
@@ -118,19 +118,23 @@ const AdminPage = () => {
           status: updatedUser.status,
         })
         .eq('id', updatedUser.id)
+        .select()
+        .single()
 
       if (error) throw error
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+        prev.map((u) => (u.id === updatedUser.id ? (data as User) : u)),
       )
       toast({ title: 'Usuário atualizado com sucesso.' })
+      return true
     } catch (error: any) {
       toast({
         title: 'Erro ao atualizar usuário',
         description: error.message,
         variant: 'destructive',
       })
+      return false
     }
   }
 
@@ -175,6 +179,7 @@ const AdminPage = () => {
 
       setUsers((prev) => [profileData as User, ...prev])
       toast({ title: 'Usuário criado com sucesso.' })
+      return true
     } catch (error: any) {
       console.error('Error creating user:', error.message)
       toast({
@@ -182,6 +187,7 @@ const AdminPage = () => {
         description: error.message,
         variant: 'destructive',
       })
+      return false
     }
   }
 

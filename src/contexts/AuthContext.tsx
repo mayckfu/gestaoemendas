@@ -16,7 +16,7 @@ import { VISITOR_USERS } from '@/lib/visitor/visitorMockData'
 interface AuthContextType {
   user: User | null
   login: (
-    email: string,
+    loginIdentifier: string,
     password?: string,
     rememberMe?: boolean,
   ) => Promise<boolean>
@@ -99,8 +99,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session?.user?.id, fetchProfile])
 
+  const resolveLoginEmail = async (loginIdentifier: string) => {
+    const normalizedLogin = loginIdentifier.trim()
+
+    if (normalizedLogin.includes('@')) {
+      return normalizedLogin.toLowerCase()
+    }
+
+    const { data, error } = await supabase.rpc('resolve_login_email', {
+      login_input: normalizedLogin,
+    })
+
+    if (error) {
+      throw new Error('Não foi possível validar o CPF informado')
+    }
+
+    if (!data) {
+      throw new Error('CPF não encontrado')
+    }
+
+    return data
+  }
+
   const login = async (
-    email: string,
+    loginIdentifier: string,
     password?: string,
     rememberMe: boolean = false,
   ): Promise<boolean> => {
@@ -112,6 +134,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // customStorage securely respects this flag to decide storage persistence mechanism
       localStorage.setItem('asplan_remember_me', rememberMe ? 'true' : 'false')
+
+      const email = await resolveLoginEmail(loginIdentifier)
 
       const { error } = await supabase.auth.signInWithPassword({
         email,

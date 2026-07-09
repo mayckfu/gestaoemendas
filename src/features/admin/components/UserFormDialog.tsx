@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -32,11 +32,34 @@ import { User, Cargo } from '@/lib/mock-data'
 const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
 
+const getCpfDigits = (cpf?: string) => cpf?.replace(/\D/g, '') || ''
+
+const isValidCpf = (cpf?: string) => {
+  const digits = getCpfDigits(cpf)
+
+  if (!digits) return true
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
+
+  const calculateCheckDigit = (factor: number) => {
+    let total = 0
+    for (let index = 0; index < factor - 1; index += 1) {
+      total += Number(digits[index]) * (factor - index)
+    }
+    const remainder = (total * 10) % 11
+    return remainder === 10 ? 0 : remainder
+  }
+
+  return (
+    calculateCheckDigit(10) === Number(digits[9]) &&
+    calculateCheckDigit(11) === Number(digits[10])
+  )
+}
+
 const userSchema = z
   .object({
     name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Email inválido'),
-    cpf: z.string().optional(),
+    cpf: z.string().optional().refine(isValidCpf, 'CPF inválido'),
     role: z.enum(['ADMIN', 'GESTOR', 'ANALISTA', 'CONSULTA'] as const),
     cargo_id: z.string().min(1, 'Cargo é obrigatório'),
     unidade: z.string().optional(),
@@ -77,7 +100,7 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void
   user?: User | null
   cargos: Cargo[]
-  onSubmit: (data: UserFormValues) => void
+  onSubmit: (data: UserFormValues) => boolean | Promise<boolean>
 }
 
 export const UserFormDialog = ({
@@ -87,6 +110,7 @@ export const UserFormDialog = ({
   cargos,
   onSubmit,
 }: UserFormDialogProps) => {
+  const [isSaving, setIsSaving] = useState(false)
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -130,7 +154,7 @@ export const UserFormDialog = ({
     }
   }, [user, form, open])
 
-  const handleSubmit = (values: UserFormValues) => {
+  const handleSubmit = async (values: UserFormValues) => {
     // Enforce password for new users if not provided
     if (!user && !values.password) {
       form.setError('password', {
@@ -139,8 +163,20 @@ export const UserFormDialog = ({
       })
       return
     }
-    onSubmit(values)
-    onOpenChange(false)
+    setIsSaving(true)
+    try {
+      const success = await onSubmit({
+        ...values,
+        cpf: getCpfDigits(values.cpf),
+        email: values.email.trim().toLowerCase(),
+      })
+
+      if (success) {
+        onOpenChange(false)
+      }
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -330,10 +366,13 @@ export const UserFormDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSaving}
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

@@ -32,7 +32,7 @@ import { supabase } from '@/lib/supabase/client'
 import { VisitorLoginButton } from '@/features/auth/components/VisitorLoginButton'
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
+  login: z.string().trim().min(1, 'Informe e-mail ou CPF'),
   password: z.string().min(1, 'Senha é obrigatória'),
   rememberMe: z.boolean().default(false),
 })
@@ -54,7 +54,7 @@ const LoginPage = () => {
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
     defaultValues: {
-      email: '',
+      login: '',
       password: '',
       rememberMe: false,
     },
@@ -66,7 +66,7 @@ const LoginPage = () => {
   useEffect(() => {
     const savedEmail = localStorage.getItem(STORAGE_EMAIL_KEY)
     if (savedEmail) {
-      form.setValue('email', savedEmail, { shouldValidate: true })
+      form.setValue('login', savedEmail, { shouldValidate: true })
       form.setValue('rememberMe', true, { shouldValidate: true })
     }
   }, [form])
@@ -82,19 +82,19 @@ const LoginPage = () => {
 
     // Handle "Remember Me" persistence for the email address UI
     if (data.rememberMe) {
-      localStorage.setItem(STORAGE_EMAIL_KEY, data.email)
+      localStorage.setItem(STORAGE_EMAIL_KEY, data.login)
     } else {
       localStorage.removeItem(STORAGE_EMAIL_KEY)
     }
 
-    const success = await login(data.email, data.password, data.rememberMe)
+    const success = await login(data.login, data.password, data.rememberMe)
 
     if (!success) {
       // Log failed attempt
       try {
         await supabase.rpc('log_security_notification', {
           p_type: 'LOGIN_FAILED',
-          p_message: `Tentativa de login falha para o email: ${data.email}`,
+          p_message: `Tentativa de login falha para o identificador: ${data.login}`,
           p_severity: 'WARNING',
           p_user_id: null,
         })
@@ -255,20 +255,20 @@ const LoginPage = () => {
                 >
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="login"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-foreground font-semibold">
-                          E-mail funcional
+                          E-mail ou CPF
                         </FormLabel>
                         <FormControl>
                           <div className="relative group">
                             <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground group-focus-within:text-asplan-primary transition-colors" />
                             <Input
-                              placeholder="usuario@institucional.gov.br"
+                              placeholder="usuario@institucional.gov.br ou 000.000.000-00"
                               className="pl-10 h-11 bg-background/50 focus-visible:ring-asplan-primary focus-visible:border-asplan-primary transition-all"
                               {...field}
-                              autoComplete="email"
+                              autoComplete="username"
                             />
                           </div>
                         </FormControl>
