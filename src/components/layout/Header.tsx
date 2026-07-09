@@ -59,8 +59,8 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b border-border bg-white px-4 md:px-6 z-30 shadow-sm transition-all print:hidden">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 flex h-16 items-center justify-between gap-2 border-b border-border bg-white px-3 md:gap-4 md:px-6 z-30 shadow-sm transition-all print:hidden">
+      <div className="flex min-w-0 items-center gap-2 md:gap-3">
         {isMobile ? (
           <Button
             variant="ghost"
@@ -86,8 +86,8 @@ export const Header = () => {
             />
           </Button>
         )}
-        <div className="flex flex-col">
-          <span className="font-bold text-lg text-brand-900 leading-tight tracking-tight">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate font-bold text-base text-brand-900 leading-tight tracking-tight md:text-lg">
             {isMobile ? 'ASPLAN' : 'CONTROLE DE EMENDAS'}
           </span>
         </div>
@@ -107,7 +107,7 @@ export const Header = () => {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
         {/* Session Timer */}
         <div
           className={cn(

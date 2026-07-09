@@ -26,7 +26,7 @@ const AppLayout = () => {
         <VisitorBanner />
         <Header />
         <main className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-background scroll-smooth print:overflow-visible print:h-auto print:block print:bg-white">
-          <div className="max-w-[1600px] mx-auto px-6 py-8 w-full print:px-0 print:py-0 print:max-w-none">
+          <div className="max-w-[1600px] mx-auto px-3 py-4 sm:px-6 sm:py-8 w-full print:px-0 print:py-0 print:max-w-none">
             <Outlet />
           </div>
         </main>

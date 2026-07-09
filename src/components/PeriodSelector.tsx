@@ -59,36 +59,38 @@ export function PeriodSelector({
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-card/50 p-1.5 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm',
+        'flex w-full flex-col gap-3 bg-card/50 p-1.5 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm sm:w-auto sm:flex-row sm:items-center',
         className,
       )}
     >
-      <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <CalendarDays className="h-4 w-4" />
         </div>
-        <ToggleGroup
-          type="single"
-          value={year}
-          onValueChange={(val) => val && onYearChange(val)}
-          className="bg-muted/50 p-1 rounded-lg gap-1"
-        >
-          {years.map((y) => (
-            <ToggleGroupItem
-              key={y}
-              value={y}
-              className="h-7 px-3 text-xs font-medium rounded-md data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm transition-all"
-            >
-              {y}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <ToggleGroup
+            type="single"
+            value={year}
+            onValueChange={(val) => val && onYearChange(val)}
+            className="w-max bg-muted/50 p-1 rounded-lg gap-1"
+          >
+            {years.map((y) => (
+              <ToggleGroupItem
+                key={y}
+                value={y}
+                className="h-7 px-3 text-xs font-medium rounded-md data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm transition-all"
+              >
+                {y}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
       </div>
 
       <div className="h-6 w-px bg-border/50 hidden sm:block" />
 
       <Select value={month} onValueChange={onMonthChange}>
-        <SelectTrigger className="w-[160px] h-9 bg-background/50 border-0 shadow-none focus:ring-0 hover:bg-background/80 transition-colors">
+        <SelectTrigger className="h-9 w-full bg-background/50 border-0 shadow-none focus:ring-0 hover:bg-background/80 transition-colors sm:w-[160px]">
           <SelectValue placeholder="Selecione o Mês" />
         </SelectTrigger>
         <SelectContent>

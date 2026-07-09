@@ -17,9 +17,16 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 import { parse, format, parseISO, getMonth } from 'date-fns'
-import { Amendment, SituacaoOficial, TipoEmenda } from '@/lib/mock-data'
+import {
+  Amendment,
+  SituacaoOficial,
+  TipoEmenda,
+  TipoRecurso,
+} from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -106,6 +113,7 @@ import { exportToDocx } from '@/features/emendas/lib/exportDocx'
 import { isMacResource, isPapResource } from '@/lib/resource-classification'
 
 const ITEMS_PER_PAGE = 10
+const ROW_NAVIGATION_LOCK_KEY = 'emendas_row_navigation_locked'
 
 const getPendencias = (amendment: Amendment) => {
   const pendencias: string[] = []
@@ -217,6 +225,26 @@ const getTypeColor = (type: string) => {
   }
 }
 
+const getResourceColor = (type?: string | null) => {
+  switch (type) {
+    case 'CUSTEIO_MAC':
+      return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900'
+    case 'CUSTEIO_PAP':
+      return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900'
+    case 'INCREMENTO_MAC':
+      return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900'
+    case 'INCREMENTO_PAP':
+      return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900'
+    case 'EQUIPAMENTO':
+      return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
+    default:
+      return 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-300 dark:border-neutral-800'
+  }
+}
+
+const getResourceLabel = (type?: string | null) =>
+  type ? TipoRecurso[type as keyof typeof TipoRecurso] || type : '-'
+
 const EmendasListPage = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -234,6 +262,9 @@ const EmendasListPage = () => {
   const [editingEmenda, setEditingEmenda] = useState<Amendment | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deletingEmenda, setDeletingEmenda] = useState<Amendment | null>(null)
+  const [isRowNavigationLocked, setIsRowNavigationLocked] = useState(
+    () => localStorage.getItem(ROW_NAVIGATION_LOCK_KEY) === 'true',
+  )
 
   // New states for optimization
   const [searchTerm, setSearchTerm] = useState(
@@ -250,6 +281,21 @@ const EmendasListPage = () => {
   const canEdit = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
   const canDelete = checkPermission(['ADMIN', 'GESTOR'])
   const canCreate = checkPermission(['ADMIN', 'GESTOR', 'ANALISTA'])
+
+  useEffect(() => {
+    localStorage.setItem(
+      ROW_NAVIGATION_LOCK_KEY,
+      isRowNavigationLocked ? 'true' : 'false',
+    )
+  }, [isRowNavigationLocked])
+
+  const handleOpenAmendment = (id: string) => {
+    if (isRowNavigationLocked || window.getSelection()?.toString()) {
+      return
+    }
+
+    navigate(`/emenda/${id}`)
+  }
 
   const fetchAmendments = useCallback(async () => {
     setIsLoading(true)
@@ -710,6 +756,7 @@ const EmendasListPage = () => {
   const handleExport = () => {
     const dataToExport = filteredAmendments.map((a) => ({
       'Tipo de Recurso': TipoEmenda[a.tipo] || a.tipo,
+      'Recurso Detalhado': getResourceLabel(a.tipo_recurso),
       Autor: a.autor,
       'Nº Emenda': a.numero_emenda,
       'Nº Proposta': a.numero_proposta,
@@ -779,12 +826,12 @@ const EmendasListPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-200">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-200 sm:text-3xl">
           {pageTitle}
         </h1>
-        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div className="flex w-full flex-col items-stretch gap-3 lg:w-auto lg:flex-row lg:flex-wrap lg:items-center">
           <PeriodSelector
             year={selectedYear}
             month={monthParam}
@@ -805,8 +852,8 @@ const EmendasListPage = () => {
               setSearchParams(newParams, { replace: true })
             }}
           />
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+            <div className="relative col-span-2 w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar..."
@@ -815,10 +862,37 @@ const EmendasListPage = () => {
                 className="pl-8 h-9"
               />
             </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant={isRowNavigationLocked ? 'secondary' : 'outline'}
+                  className="h-9 w-full gap-1 sm:w-auto sm:flex-none"
+                  aria-pressed={isRowNavigationLocked}
+                  onClick={() =>
+                    setIsRowNavigationLocked((current) => !current)
+                  }
+                >
+                  {isRowNavigationLocked ? (
+                    <Lock className="h-3.5 w-3.5" />
+                  ) : (
+                    <Unlock className="h-3.5 w-3.5" />
+                  )}
+                  <span className="sm:not-sr-only sm:whitespace-nowrap">
+                    Trava
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isRowNavigationLocked
+                  ? 'Clique nas linhas travado para copiar informações'
+                  : 'Travar clique nas linhas para copiar informações'}
+              </TooltipContent>
+            </Tooltip>
             <Button
               size="sm"
               variant="outline"
-              className="h-9 gap-1 flex-1 sm:flex-none"
+              className="h-9 w-full gap-1 sm:w-auto sm:flex-none"
               onClick={handleExport}
             >
               <FileDown className="h-3.5 w-3.5" />
@@ -827,7 +901,7 @@ const EmendasListPage = () => {
             <Button
               size="sm"
               variant="outline"
-              className="h-9 gap-1 flex-1 sm:flex-none border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900 dark:hover:bg-blue-900/30"
+              className="h-9 w-full gap-1 sm:w-auto sm:flex-none border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900 dark:hover:bg-blue-900/30"
               onClick={handleExportDocx}
             >
               <FileDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
@@ -836,7 +910,7 @@ const EmendasListPage = () => {
             {canCreate && (
               <Button
                 size="sm"
-                className="h-9 gap-1 flex-1 sm:flex-none"
+                className="h-9 w-full gap-1 sm:w-auto sm:flex-none"
                 onClick={handleAddNew}
               >
                 <PlusCircle className="h-3.5 w-3.5" />
@@ -918,7 +992,7 @@ const EmendasListPage = () => {
           ) : (
             <>
               {/* Mobile View - Cards */}
-              <div className="md:hidden space-y-4 p-4">
+              <div className="md:hidden space-y-4 p-3 sm:p-4">
                 {paginatedData.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Nenhuma emenda encontrada.
@@ -927,38 +1001,46 @@ const EmendasListPage = () => {
                   paginatedData.map((amendment) => (
                     <Card
                       key={amendment.id}
-                      className="overflow-hidden border shadow-sm active:scale-[0.98] transition-transform duration-100"
-                      onClick={() => navigate(`/emenda/${amendment.id}`)}
+                      className={cn(
+                        'overflow-hidden border shadow-sm transition-transform duration-100',
+                        isRowNavigationLocked
+                          ? 'cursor-text select-text'
+                          : 'cursor-pointer active:scale-[0.98]',
+                      )}
+                      onClick={() => handleOpenAmendment(amendment.id)}
                     >
                       <CardHeader className="p-4 pb-2 bg-neutral-50/50">
-                        <div className="flex justify-between items-start gap-2">
-                          <div>
-                            <div className="font-semibold text-neutral-900 dark:text-neutral-100">
+                        <div className="flex flex-col items-start gap-2">
+                          <div className="min-w-0">
+                            <div className="break-words font-semibold text-neutral-900 dark:text-neutral-100">
                               {amendment.parlamentar}
                             </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="break-all text-xs text-muted-foreground mt-0.5">
                               Proposta: {amendment.numero_proposta}
                             </div>
                           </div>
-                          <Badge variant="secondary" className="font-normal">
+                          <Badge
+                            variant="secondary"
+                            className="h-auto max-w-full whitespace-normal break-words text-left font-normal leading-snug"
+                          >
                             Portaria: {amendment.portaria || '-'}
                           </Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 pt-2">
-                        <div className="flex justify-between items-center mt-2">
+                        <div className="flex items-center justify-between gap-3 mt-2">
                           <span className="text-sm text-muted-foreground">
                             Valor Total
                           </span>
-                          <span className="font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
+                          <span className="shrink-0 font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
                             {formatCurrencyBRL(
                               amendment.valor_total,
                               isPrivacyMode,
                             )}
                           </span>
                         </div>
-                        <div className="mt-3 flex justify-between items-center">
-                          <div className="flex gap-2">
+                        <div className="mt-3 flex flex-col gap-3">
+                          <div className="flex flex-wrap gap-2">
                             <Badge
                               variant="outline"
                               className="text-[10px] font-normal"
@@ -971,8 +1053,29 @@ const EmendasListPage = () => {
                             >
                               {TipoEmenda[amendment.tipo]}
                             </Badge>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[10px] font-semibold',
+                                getResourceColor(amendment.tipo_recurso),
+                              )}
+                            >
+                              {getResourceLabel(amendment.tipo_recurso)}
+                            </Badge>
                           </div>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className="flex flex-wrap justify-end gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                              onClick={() => navigate(`/emenda/${amendment.id}`)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Ver Detalhes</span>
+                            </Button>
                             {canEdit && (
                               <Button
                                 size="icon"
@@ -1008,7 +1111,7 @@ const EmendasListPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="sticky top-0 bg-background/90 backdrop-blur-sm z-10">
-                      <TableHead className="w-[120px] font-medium text-neutral-900 dark:text-neutral-200">
+                      <TableHead className="w-[150px] font-medium text-neutral-900 dark:text-neutral-200">
                         {renderHeader('Tipo de Recurso', 'tipo')}
                       </TableHead>
                       <TableHead className="min-w-[180px] font-medium text-neutral-900 dark:text-neutral-200">
@@ -1060,23 +1163,38 @@ const EmendasListPage = () => {
                           <TableRow
                             key={amendment.id}
                             className={cn(
-                              'h-auto py-2 cursor-pointer transition-colors border-b last:border-0',
+                              'h-auto py-2 transition-colors border-b last:border-0',
+                              isRowNavigationLocked
+                                ? 'cursor-text select-text'
+                                : 'cursor-pointer',
                               rowColorClass,
                             )}
-                            onClick={() => navigate(`/emenda/${amendment.id}`)}
+                            onClick={() => handleOpenAmendment(amendment.id)}
                           >
                             <TableCell className="align-top">
-                              <Badge
-                                className={cn(
-                                  'flex items-center gap-2 w-fit',
-                                  getTypeColor(amendment.tipo),
-                                )}
-                              >
-                                {getTypeIcon(amendment.tipo)}
-                                <span className="capitalize text-xs">
-                                  {TipoEmenda[amendment.tipo] || amendment.tipo}
-                                </span>
-                              </Badge>
+                              <div className="flex flex-col items-start gap-1.5">
+                                <Badge
+                                  className={cn(
+                                    'flex items-center gap-2 w-fit',
+                                    getTypeColor(amendment.tipo),
+                                  )}
+                                >
+                                  {getTypeIcon(amendment.tipo)}
+                                  <span className="capitalize text-xs">
+                                    {TipoEmenda[amendment.tipo] ||
+                                      amendment.tipo}
+                                  </span>
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'w-fit text-[10px] font-semibold leading-none px-2 py-1',
+                                    getResourceColor(amendment.tipo_recurso),
+                                  )}
+                                >
+                                  {getResourceLabel(amendment.tipo_recurso)}
+                                </Badge>
+                              </div>
                             </TableCell>
                             <TableCell className="align-top">
                               <div className="flex items-center gap-3">
