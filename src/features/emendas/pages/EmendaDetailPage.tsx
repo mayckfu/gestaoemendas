@@ -11,8 +11,17 @@ import {
   Target,
   Receipt,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DetailedAmendment,
@@ -47,6 +56,7 @@ import { visitorUpdateEmenda } from '@/lib/visitor'
 import { amendmentService } from '@/services/amendmentService'
 import { getSignedUrl } from '@/lib/supabase/storage'
 import { cn } from '@/lib/utils'
+import { fnsSyncService, FnsSyncResult } from '@/services/fnsSyncService'
 
 const LAST_EMENDAS_LIST_URL_KEY = 'emendas_last_list_url'
 
@@ -71,6 +81,8 @@ const EmendaDetailPage = () => {
   const [emendaData, setEmendaData] = useState<DetailedAmendment | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isSyncingFns, setIsSyncingFns] = useState(false)
+  const [fnsPreview, setFnsPreview] = useState<FnsSyncResult | null>(null)
 
   const dadosTecnicosRef = useRef<EmendaDadosTecnicosHandles>(null)
   const repassesTabRef = useRef<EmendaRepassesTabHandles>(null)
@@ -166,6 +178,64 @@ const EmendaDetailPage = () => {
 
   const refreshData = async () => {
     await fetchEmendaDetails(false)
+  }
+
+  const handleFnsSync = async () => {
+    if (!id || !emendaData?.numero_proposta || !canEdit) return
+
+    setIsSyncingFns(true)
+    try {
+      const result = await fnsSyncService.syncAmendment(id, false)
+      if (!result?.success) throw new Error(result?.error || 'O FNS não retornou a proposta.')
+      setFnsPreview(result)
+    } catch (syncError: any) {
+      toast({
+        title: 'Falha ao consultar o FNS',
+        description: syncError?.message || 'Não foi possível sincronizar esta proposta.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSyncingFns(false)
+    }
+  }
+
+  const handleConfirmFnsSync = async () => {
+    if (!id) return
+    setIsSyncingFns(true)
+    try {
+      const result = await fnsSyncService.syncAmendment(id, true)
+      if (!result?.success) throw new Error(result?.error || 'O FNS não retornou a proposta.')
+      const changedFields = Object.keys(result.changes || {}).length
+      const newPayments = (result.payments || []).filter((payment) => payment.action === 'insert').length
+      setFnsPreview(null)
+      await fetchEmendaDetails(false)
+      toast({
+        title: 'Atualização do FNS autorizada',
+        description: `${changedFields} campo(s) atualizado(s) e ${newPayments} repasse(s) novo(s).`,
+      })
+    } catch (syncError: any) {
+      toast({
+        title: 'Falha ao aplicar dados do FNS',
+        description: syncError?.message || 'Não foi possível aplicar a atualização.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSyncingFns(false)
+    }
+  }
+
+  const fieldLabels: Record<string, string> = {
+    portaria: 'Portaria',
+    valor_total: 'Valor total',
+    numero_emenda: 'Número da emenda',
+    situacao: 'Situação oficial',
+    status_interno: 'Status interno',
+  }
+
+  const displayFnsValue = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return 'Não informado'
+    if (typeof value === 'number') return value.toLocaleString('pt-BR')
+    return String(value)
   }
 
   const handleEmendaDataChange = async (updatedEmenda: DetailedAmendment) => {
@@ -377,6 +447,17 @@ const EmendaDetailPage = () => {
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
           Detalhes da Emenda
         </h1>
+        {canEdit && emendaData.numero_proposta && (
+          <Button
+            variant="outline"
+            className="ml-auto gap-2"
+            onClick={handleFnsSync}
+            disabled={isSyncingFns}
+          >
+            <RefreshCw className={cn('h-4 w-4', isSyncingFns && 'animate-spin')} />
+            {isSyncingFns ? 'Consultando FNS...' : 'Sincronizar FNS'}
+          </Button>
+        )}
       </div>
 
       <EmendaDetailHeader
@@ -537,6 +618,93 @@ const EmendaDetailPage = () => {
           <AuditReportTab data={[emendaData]} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={Boolean(fnsPreview)} onOpenChange={(open) => !open && setFnsPreview(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Revisar atualização do FNS</DialogTitle>
+            <DialogDescription>
+              Confira os dados encontrados. Nada abaixo será alterado até você autorizar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 text-sm">
+            {Object.keys(fnsPreview?.changes || {}).length > 0 && (
+              <section className="space-y-2">
+                <h3 className="font-semibold">Campos que serão atualizados</h3>
+                {Object.entries(fnsPreview?.changes || {}).map(([field, value]) => (
+                  <div key={field} className="rounded-lg border p-3">
+                    <p className="font-medium">{fieldLabels[field] || field}</p>
+                    <p className="mt-1 text-muted-foreground">
+                      {displayFnsValue((emendaData as any)?.[field])} <span className="px-2">→</span>
+                      <strong className="text-foreground">{displayFnsValue(value)}</strong>
+                    </p>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {(fnsPreview?.payments || []).length > 0 && (
+              <section className="space-y-2">
+                <h3 className="font-semibold">Pagamentos e contas confirmados</h3>
+                {(fnsPreview?.payments || []).map((payment, index) => (
+                  <div key={`${String(payment.ordem_bancaria)}-${index}`} className="rounded-lg border p-3">
+                    <p><strong>OB:</strong> {displayFnsValue(payment.ordem_bancaria)}</p>
+                    <p><strong>Valor:</strong> R$ {Number(payment.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    {payment.account_number && (
+                      <p><strong>Conta:</strong> {displayFnsValue(payment.bank_name)} · Ag. {displayFnsValue(payment.branch_number)} · Conta {displayFnsValue(payment.account_number)}</p>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {payment.action === 'insert' ? 'Novo repasse' : 'Repasse já cadastrado; dados oficiais serão conferidos'}
+                    </p>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {(fnsPreview?.attachments || []).some((attachment) => attachment.action === 'insert') && (
+              <section className="space-y-2">
+                <h3 className="font-semibold">Novos anexos</h3>
+                {(fnsPreview?.attachments || []).filter((attachment) => attachment.action === 'insert').map((attachment, index) => (
+                  <div key={index} className="rounded-lg border p-3">
+                    {displayFnsValue(attachment.filename)}
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {Object.keys(fnsPreview?.conflicts || {}).length > 0 && (
+              <section className="space-y-2">
+                <h3 className="font-semibold text-amber-700">Divergências preservadas</h3>
+                {Object.entries(fnsPreview?.conflicts || {}).map(([field, conflict]) => (
+                  <div key={field} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="font-medium">{fieldLabels[field] || field}</p>
+                    <p>Cadastro: {displayFnsValue(conflict.current)}</p>
+                    <p>FNS: {displayFnsValue(conflict.official)}</p>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {Object.keys(fnsPreview?.changes || {}).length === 0 &&
+              !(fnsPreview?.payments || []).some((payment) => payment.action === 'insert' || payment.account_number) &&
+              !(fnsPreview?.attachments || []).some((attachment) => attachment.action === 'insert') && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                  O cadastro já está de acordo com os dados disponíveis no FNS.
+                </div>
+              )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFnsPreview(null)} disabled={isSyncingFns}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmFnsSync} disabled={isSyncingFns}>
+              {isSyncingFns ? 'Aplicando...' : 'Autorizar atualização'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile-only Pendências Alert at bottom of scrollable area */}
       {pendingCount > 0 && (

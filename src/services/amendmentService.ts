@@ -55,12 +55,13 @@ export const amendmentService = {
       const emendaIds = emendas.map((e) => e.id)
 
       // Parallel fetching for performance
-      const [repassesRes, despesasRes, anexosRes, pendenciasRes, acoesRes] = await Promise.all([
+      const [repassesRes, despesasRes, anexosRes, pendenciasRes, acoesRes, bankAccountsRes] = await Promise.all([
         supabase.from('repasses').select('*').in('emenda_id', emendaIds),
         supabase.from('despesas').select('*, profiles:registrada_por(name)').in('emenda_id', emendaIds),
         supabase.from('anexos').select('*').in('emenda_id', emendaIds),
         supabase.from('pendencias').select('*').in('emenda_id', emendaIds),
-        supabase.from('acoes_emendas').select('*, destinacoes_recursos(*)').in('emenda_id', emendaIds)
+        supabase.from('acoes_emendas').select('*, destinacoes_recursos(*)').in('emenda_id', emendaIds),
+        (supabase as any).from('fns_bank_accounts').select('*').in('emenda_id', emendaIds)
       ])
 
       const detailed: DetailedAmendment[] = emendas.map((e: any) => {
@@ -83,6 +84,7 @@ export const amendmentService = {
           anexos: d_anexos,
           pendencias: d_pendencias,
           acoes: d_acoes,
+          fns_bank_accounts: (bankAccountsRes.data || []).filter((account: any) => account.emenda_id === e.id),
           descricao_completa: e.objeto_emenda || '',
           historico: [] // Historico implementation can be added later
         }
@@ -115,13 +117,14 @@ export const amendmentService = {
       if (!emenda) return { data: null, error: { message: 'Emenda não encontrada.' } }
 
       // Parallel fetching for performance
-      const [repassesRes, despesasRes, anexosRes, pendenciasRes, acoesRes, historicoRes] = await Promise.all([
+      const [repassesRes, despesasRes, anexosRes, pendenciasRes, acoesRes, historicoRes, bankAccountsRes] = await Promise.all([
         supabase.from('repasses').select('*').eq('emenda_id', id),
         supabase.from('despesas').select('*, profiles:registrada_por(name)').eq('emenda_id', id),
         supabase.from('anexos').select('*, profiles:uploader(name)').eq('emenda_id', id),
         supabase.from('pendencias').select('*').eq('emenda_id', id),
         supabase.from('acoes_emendas').select('*, destinacoes_recursos(*)').eq('emenda_id', id),
-        supabase.from('historico').select('*, profiles:feito_por(name)').eq('emenda_id', id).order('criado_em', { ascending: false })
+        supabase.from('historico').select('*, profiles:feito_por(name)').eq('emenda_id', id).order('criado_em', { ascending: false }),
+        (supabase as any).from('fns_bank_accounts').select('*').eq('emenda_id', id).order('balance', { ascending: false })
       ])
 
       // Calculate totals
@@ -164,6 +167,7 @@ export const amendmentService = {
           ...h,
           feito_por: h.profiles?.name || 'Sistema'
         })),
+        fns_bank_accounts: bankAccountsRes.data || [],
         total_repassado: totalRepassado,
         total_gasto: totalGasto,
         descricao_completa: emenda.objeto_emenda || ''

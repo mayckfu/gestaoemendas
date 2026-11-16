@@ -5,6 +5,7 @@ import {
   Edit,
   Trash2,
   Calendar,
+  Landmark,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -204,6 +205,7 @@ export const EmendaRepassesTab = forwardRef<
                   <TableHead>Data</TableHead>
                   <TableHead>Fonte</TableHead>
                   <TableHead>Ordem Bancária</TableHead>
+                  <TableHead>Conta de Pagamento FNS</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>
@@ -224,6 +226,26 @@ export const EmendaRepassesTab = forwardRef<
                     <TableCell>
                       {repasse.ordem_bancaria || (
                         <span className="text-muted-foreground italic">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {repasse.account_number ? (
+                        <div className="min-w-[190px] space-y-0.5">
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Landmark className="h-3.5 w-3.5 text-emerald-600" />
+                            {repasse.bank_name || `Banco ${repasse.bank_code || '-'}`}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Agência {repasse.branch_number || '-'} · Conta {repasse.account_number}
+                          </div>
+                          <Badge variant="outline" className="mt-1 border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">
+                            Confirmado na OB pelo FNS
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          Não informado pelo FNS
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>

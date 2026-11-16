@@ -5,7 +5,6 @@ import { SidebarProvider, useSidebar } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import { SessionTimeout } from '@/components/SessionTimeout'
 import { VisitorBanner } from './VisitorBanner'
-import { ChatWidget } from '@/features/chat/components/ChatWidget'
 
 const AppLayout = () => {
   const { state, isMobile } = useSidebar()
@@ -22,16 +21,15 @@ const AppLayout = () => {
     >
       <SessionTimeout />
       <AppSidebar />
-      <div className="flex flex-col overflow-hidden h-screen print:overflow-visible print:h-auto print:block">
+      <div className="flex min-w-0 flex-col overflow-hidden h-dvh print:overflow-visible print:h-auto print:block">
         <VisitorBanner />
         <Header />
-        <main className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-background scroll-smooth print:overflow-visible print:h-auto print:block print:bg-white">
-          <div className="max-w-[1600px] mx-auto px-3 py-4 sm:px-6 sm:py-8 w-full print:px-0 print:py-0 print:max-w-none">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-neutral-50/50 dark:bg-background scroll-smooth print:overflow-visible print:h-auto print:block print:bg-white">
+          <div className="box-border min-w-0 max-w-[1600px] mx-auto px-3 py-4 sm:px-6 sm:py-8 w-full print:px-0 print:py-0 print:max-w-none">
             <Outlet />
           </div>
         </main>
       </div>
-      <ChatWidget />
     </div>
   )
 }

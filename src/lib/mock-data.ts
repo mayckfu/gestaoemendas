@@ -119,6 +119,12 @@ export type Repasse = {
   status: 'REPASSADO' | 'PENDENTE' | 'CANCELADO'
   observacoes?: string
   ordem_bancaria?: string
+  bank_code?: string | null
+  bank_name?: string | null
+  branch_number?: string | null
+  account_number?: string | null
+  banking_verified_at?: string | null
+  fns_payment_data?: any
 }
 
 export type Despesa = {
@@ -156,6 +162,21 @@ export type Anexo = {
   data?: string
   size?: number
   metadata?: any
+}
+
+export type FnsBankAccount = {
+  id: string
+  emenda_id: string
+  fns_account_id: string
+  beneficiary_cnpj?: string | null
+  beneficiary_name?: string | null
+  bank_code?: string | null
+  branch_number?: string | null
+  account_number?: string | null
+  account_type?: string | null
+  balance?: number | null
+  balance_updated_at?: string | null
+  synced_at: string
 }
 
 export type Historico = {
@@ -210,6 +231,7 @@ export type DetailedAmendment = Amendment & {
   historico: Historico[]
   pendencias: Pendencia[]
   acoes: ActionWithDestinations[]
+  fns_bank_accounts: FnsBankAccount[]
 }
 
 export type UserRole = 'ADMIN' | 'GESTOR' | 'ANALISTA' | 'CONSULTA'
