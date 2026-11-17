@@ -133,19 +133,43 @@ function paymentSummary(row: BulkRow) {
     .map((payment) => {
       const order = String(payment.ordem_bancaria || 'OB não informada')
       const account = payment.account_number
-        ? ` · Ag. ${payment.branch_number || '-'} · Cc. ${payment.account_number}`
+        ? ` · Ag. ${payment.branch_number || '-'} · Cc. ${payment.account_number} (confirmada pela OB)`
         : ''
       return `${order}${account}`
     })
     .join(' | ')
 }
 
-function bankAccountSummary(row: BulkRow) {
+function beneficiaryBankAccounts(row: BulkRow) {
   const accounts = row.result.bank_accounts || []
-  if (!accounts.length) return 'Nenhuma conta adicional encontrada'
-  return accounts.map((account) =>
-    `Banco ${String(account.coBanco || '-')} · Ag. ${String(account.coAgencia || '-')} · Cc. ${String(account.nuConta || '-')}`
-  ).join(' | ')
+  const unique = new Map<string, Record<string, unknown>>()
+  accounts.forEach((account) => {
+    const key = `${String(account.coBanco || '')}-${String(account.coAgencia || '')}-${String(account.nuConta || '')}`
+    unique.set(key, account)
+  })
+  return [...unique.values()]
+}
+
+function BeneficiaryBankAccountsDetails({ row }: { row: BulkRow }) {
+  const accounts = beneficiaryBankAccounts(row)
+  if (!accounts.length) return null
+  return (
+    <details className="mt-2 rounded border bg-muted/20 p-2">
+      <summary className="cursor-pointer font-medium text-muted-foreground">
+        {accounts.length} conta(s) geral(is) do beneficiário
+      </summary>
+      <p className="mt-1 text-[11px] text-amber-700">
+        Estas contas são do beneficiário no FNS e não estão necessariamente vinculadas a esta proposta.
+      </p>
+      <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">
+        {accounts.map((account, index) => (
+          <li key={index} className="text-muted-foreground">
+            Banco {String(account.coBanco || '-')} · Ag. {String(account.coAgencia || '-')} · Cc. {String(account.nuConta || '-')}
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
 }
 
 export function FnsBulkSyncTab({ years }: { years: number[] }) {
@@ -503,7 +527,7 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
                     </TableCell>
                     <TableCell className="max-w-[330px] whitespace-normal text-xs">
                       <p>{paymentSummary(row)}</p>
-                      <p className="mt-1 text-muted-foreground">Contas FNS: {bankAccountSummary(row)}</p>
+                      <BeneficiaryBankAccountsDetails row={row} />
                     </TableCell>
                     <TableCell>
                       {!row.result.success ? (
