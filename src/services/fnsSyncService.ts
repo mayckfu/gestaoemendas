@@ -21,6 +21,16 @@ export type FnsBulkSyncOptions = {
   batchId?: string
 }
 
+export type FnsBackupEntry = {
+  id: string
+  backup_group_id: string
+  emenda_id: string
+  request_year: number
+  reason: 'MANUAL' | 'AUTOMATIC'
+  created_at: string
+  restored_at: string | null
+}
+
 export const fnsSyncService = {
   async syncAmendment(emendaId: string, apply = false) {
     const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
@@ -53,6 +63,35 @@ export const fnsSyncService = {
     if (data?.error) throw new Error(data.error)
 
     return (data?.results ?? []) as FnsSyncResult[]
+  },
+
+  async createBackup(emendaIds: string[], requestYear: number, batchId = crypto.randomUUID()) {
+    if (emendaIds.length === 0) throw new Error('Nenhuma proposta encontrada para o backup.')
+    if (emendaIds.length > 50) throw new Error('O limite por lote é de 50 propostas.')
+    const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
+      body: { operation: 'create_backup', emenda_ids: emendaIds, request_year: requestYear, batch_id: batchId },
+    })
+    if (error) throw error
+    if (data?.error) throw new Error(data.error)
+    return data as { success: true; backup_group_id: string; backed_up: number }
+  },
+
+  async listBackups(requestYear: number) {
+    const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
+      body: { operation: 'list_backups', request_year: requestYear },
+    })
+    if (error) throw error
+    if (data?.error) throw new Error(data.error)
+    return (data?.backups ?? []) as FnsBackupEntry[]
+  },
+
+  async restoreBackup(backupGroupId: string) {
+    const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
+      body: { operation: 'restore_backup', backup_group_id: backupGroupId },
+    })
+    if (error) throw error
+    if (data?.error) throw new Error(data.error)
+    return data as { success: true; restored: number }
   },
 }
 

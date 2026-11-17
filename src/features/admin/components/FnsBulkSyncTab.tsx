@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
   DatabaseZap,
+  HardDrive,
   Loader2,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
@@ -38,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { FnsSyncResult, fnsSyncService } from '@/services/fnsSyncService'
+import { FnsBackupEntry, FnsSyncResult, fnsSyncService } from '@/services/fnsSyncService'
 
 const BATCH_SIZE = 5
 
@@ -59,6 +61,14 @@ type BulkRow = {
 }
 
 type ResultFilter = 'changes' | 'all' | 'unchanged' | 'conflicts' | 'errors'
+
+type BackupGroup = {
+  id: string
+  reason: 'MANUAL' | 'AUTOMATIC'
+  createdAt: string
+  count: number
+  restoredAt: string | null
+}
 
 const FIELD_LABELS: Record<string, string> = {
   portaria: 'Portaria',
@@ -151,8 +161,31 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [restoreTarget, setRestoreTarget] = useState<BackupGroup | null>(null)
+  const [backups, setBackups] = useState<BackupGroup[]>([])
+  const [isBackingUp, setIsBackingUp] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(false)
   const [progress, setProgress] = useState(0)
   const [progressLabel, setProgressLabel] = useState('')
+
+  const loadBackups = useCallback(async () => {
+    try {
+      const entries = await fnsSyncService.listBackups(Number(year))
+      const grouped = new Map<string, FnsBackupEntry[]>()
+      entries.forEach((entry) => grouped.set(entry.backup_group_id, [...(grouped.get(entry.backup_group_id) || []), entry]))
+      setBackups([...grouped.entries()].map(([id, items]) => ({
+        id,
+        reason: items[0].reason,
+        createdAt: items[0].created_at,
+        count: items.length,
+        restoredAt: items.find((item) => item.restored_at)?.restored_at || null,
+      })).sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+    } catch {
+      setBackups([])
+    }
+  }, [year])
+
+  useEffect(() => { void loadBackups() }, [loadBackups])
 
   const filteredRows = useMemo(() => {
     if (filter === 'all') return rows
@@ -277,9 +310,46 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
         description: `${results.length - failures} proposta(s) atualizada(s)${failures ? ` e ${failures} falha(s)` : ''}.`,
         variant: failures ? 'destructive' : 'default',
       })
+      await loadBackups()
     } finally {
       setIsApplying(false)
       setProgressLabel('')
+    }
+  }
+
+  const handleCreateBackup = async () => {
+    setIsBackingUp(true)
+    try {
+      const amendments = await loadAmendments()
+      const groupId = createBatchId()
+      let total = 0
+      for (const batch of chunks(amendments, 50)) {
+        const result = await fnsSyncService.createBackup(batch.map((item) => item.id), Number(year), groupId)
+        total += result.backed_up
+      }
+      await loadBackups()
+      toast({ title: 'Backup criado', description: `${total} proposta(s) de ${year} foram protegidas no estado atual.` })
+    } catch (error: any) {
+      toast({ title: 'Falha ao criar backup', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsBackingUp(false)
+    }
+  }
+
+  const handleRestore = async () => {
+    if (!restoreTarget) return
+    setIsRestoring(true)
+    try {
+      const result = await fnsSyncService.restoreBackup(restoreTarget.id)
+      setRestoreTarget(null)
+      setRows([])
+      setSelectedIds(new Set())
+      await loadBackups()
+      toast({ title: 'Backup restaurado', description: `${result.restored} proposta(s) voltaram ao estado salvo.` })
+    } catch (error: any) {
+      toast({ title: 'Falha ao restaurar backup', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsRestoring(false)
     }
   }
 
@@ -292,7 +362,7 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
     })
   }
 
-  const busy = isPreviewing || isApplying
+  const busy = isPreviewing || isApplying || isBackingUp || isRestoring
 
   return (
     <div className="space-y-5">
@@ -313,6 +383,10 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleCreateBackup} disabled={busy} className="gap-2">
+            {isBackingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <HardDrive className="h-4 w-4" />}
+            Criar backup de {year}
+          </Button>
           {counts.errors > 0 && (
             <Button variant="outline" onClick={() => handlePreview(true)} disabled={busy} className="gap-2">
               <RefreshCw className="h-4 w-4" /> Repetir falhas ({counts.errors})
@@ -332,6 +406,31 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
             <ShieldCheck className="h-4 w-4" /> Autorizar selecionadas ({selectedIds.size})
           </Button>
         </div>
+      </div>
+
+      <div className="rounded-lg border bg-muted/20 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="font-medium">Backups de segurança</h3>
+            <p className="text-sm text-muted-foreground">Um backup automático também é criado antes de cada autorização.</p>
+          </div>
+          <Badge variant="outline">{backups.length} versão(ões) de {year}</Badge>
+        </div>
+        {backups.length ? (
+          <div className="space-y-2">
+            {backups.slice(0, 5).map((backup) => (
+              <div key={backup.id} className="flex flex-col gap-2 rounded-md border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm">
+                  <p className="font-medium">{backup.reason === 'MANUAL' ? 'Backup manual' : 'Backup automático'} · {backup.count} proposta(s)</p>
+                  <p className="text-muted-foreground">{new Date(backup.createdAt).toLocaleString('pt-BR')}{backup.restoredAt ? ` · Restaurado em ${new Date(backup.restoredAt).toLocaleString('pt-BR')}` : ''}</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setRestoreTarget(backup)} disabled={busy} className="gap-2">
+                  <RotateCcw className="h-4 w-4" /> Restaurar esta versão
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">Ainda não há backup deste ano.</p>}
       </div>
 
       {busy && (
@@ -444,6 +543,23 @@ export function FnsBulkSyncTab({ years }: { years: number[] }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleApply}>Autorizar atualização</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(restoreTarget)} onOpenChange={(open) => { if (!open) setRestoreTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar a versão anterior?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As propostas, repasses, anexos e contas FNS deste backup voltarão exatamente ao estado salvo. Alterações feitas depois desse backup nesses registros serão substituídas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRestoring}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestore} disabled={isRestoring}>
+              {isRestoring ? 'Restaurando...' : `Restaurar ${restoreTarget?.count || 0} proposta(s)`}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

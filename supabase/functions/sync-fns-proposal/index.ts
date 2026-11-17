@@ -254,6 +254,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}))
+    const operation = typeof body.operation === 'string' ? body.operation : 'sync'
     const apply = body.apply === true
     const requestYear = Number.isInteger(body.request_year) ? body.request_year : null
     const batchId = typeof body.batch_id === 'string' && body.batch_id ? body.batch_id : null
@@ -265,6 +266,65 @@ Deno.serve(async (req: Request) => {
     const requestedNumbers = Array.isArray(body.proposal_numbers)
       ? body.proposal_numbers.map(normalizeProposalNumber).filter(Boolean)
       : []
+
+    const captureBackups = async (
+      amendmentsToBackup: JsonRecord[],
+      groupId: string,
+      reason: 'MANUAL' | 'AUTOMATIC',
+      year: number,
+    ) => {
+      for (const amendment of amendmentsToBackup) {
+        const [{ data: transfers, error: transfersError }, { data: attachments, error: attachmentsError }, { data: accounts, error: accountsError }] = await Promise.all([
+          adminClient.from('repasses').select('*').eq('emenda_id', amendment.id),
+          adminClient.from('anexos').select('*').eq('emenda_id', amendment.id),
+          adminClient.from('fns_bank_accounts').select('*').eq('emenda_id', amendment.id),
+        ])
+        if (transfersError) throw transfersError
+        if (attachmentsError) throw attachmentsError
+        if (accountsError) throw accountsError
+
+        const { error: backupError } = await adminClient.from('fns_sync_backups').upsert({
+          backup_group_id: groupId,
+          emenda_id: amendment.id,
+          request_year: year,
+          reason,
+          snapshot: {
+            amendment,
+            transfers: transfers ?? [],
+            attachments: attachments ?? [],
+            bank_accounts: accounts ?? [],
+          },
+          created_by: user.id,
+        }, { onConflict: 'backup_group_id,emenda_id', ignoreDuplicates: true })
+        if (backupError) throw backupError
+      }
+    }
+
+    if (operation === 'list_backups') {
+      if (profile.role !== 'ADMIN') return jsonResponse({ error: 'Somente administradores podem consultar backups' }, 403)
+      let backupsQuery = adminClient
+        .from('fns_sync_backups')
+        .select('id,backup_group_id,emenda_id,request_year,reason,created_at,restored_at')
+        .order('created_at', { ascending: false })
+        .limit(500)
+      if (requestYear !== null) backupsQuery = backupsQuery.eq('request_year', requestYear)
+      const { data: backups, error: backupsError } = await backupsQuery
+      if (backupsError) throw backupsError
+      return jsonResponse({ success: true, backups: backups ?? [] })
+    }
+
+    if (operation === 'restore_backup') {
+      if (profile.role !== 'ADMIN') return jsonResponse({ error: 'Somente administradores podem restaurar backups' }, 403)
+      const groupId = typeof body.backup_group_id === 'string' ? body.backup_group_id : ''
+      if (!groupId) return jsonResponse({ error: 'Informe backup_group_id' }, 400)
+
+      const { data: restored, error: restoreError } = await adminClient.rpc('restore_fns_sync_backup', {
+        p_backup_group_id: groupId,
+        p_restored_by: user.id,
+      })
+      if (restoreError) throw restoreError
+      return jsonResponse({ success: true, restored })
+    }
 
     const isBulkRequest = requestedIds.length > 1 || requestedNumbers.length > 1 || batchId !== null
     if (isBulkRequest && profile.role !== 'ADMIN') {
@@ -285,6 +345,20 @@ Deno.serve(async (req: Request) => {
 
     const { data: amendments, error: amendmentsError } = await query
     if (amendmentsError) throw amendmentsError
+
+    if (operation === 'create_backup') {
+      if (profile.role !== 'ADMIN') return jsonResponse({ error: 'Somente administradores podem criar backups' }, 403)
+      const groupId = batchId ?? crypto.randomUUID()
+      await captureBackups(amendments ?? [], groupId, 'MANUAL', requestYear ?? new Date().getFullYear())
+      return jsonResponse({ success: true, backup_group_id: groupId, backed_up: amendments?.length ?? 0 })
+    }
+
+    if (operation !== 'sync') return jsonResponse({ error: 'Operação inválida' }, 400)
+
+    if (apply) {
+      const groupId = batchId ?? crypto.randomUUID()
+      await captureBackups(amendments ?? [], groupId, 'AUTOMATIC', requestYear ?? new Date().getFullYear())
+    }
 
     const results = []
 
