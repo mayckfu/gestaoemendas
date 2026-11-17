@@ -42,7 +42,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { FnsBackupEntry, FnsSyncResult, fnsSyncService } from '@/services/fnsSyncService'
 
-const BATCH_SIZE = 5
+// Cada proposta pode disparar várias consultas públicas no FNS. Lotes menores
+// evitam que a Edge Function seja interrompida por tempo limite.
+const BATCH_SIZE = 2
 
 type AmendmentSummary = {
   id: string

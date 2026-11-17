@@ -1,5 +1,23 @@
 import { supabase } from '@/lib/supabase/client'
 
+async function throwInvokeError(error: any): Promise<never> {
+  let serverMessage = ''
+  try {
+    const response = error?.context as Response | undefined
+    if (response) {
+      const payload = await response.clone().json()
+      serverMessage = payload?.error ? String(payload.error) : ''
+    }
+  } catch { /* The response may not contain JSON. */ }
+
+  if (serverMessage) throw new Error(serverMessage)
+
+  if (String(error?.message || '').includes('non-2xx')) {
+    throw new Error('O serviço online interrompeu este lote. Tente novamente; as propostas já consultadas permanecem preservadas.')
+  }
+  throw error
+}
+
 export type FnsSyncResult = {
   emenda_id: string
   numero_proposta: string
@@ -37,7 +55,7 @@ export const fnsSyncService = {
       body: { emenda_id: emendaId, apply },
     })
 
-    if (error) throw error
+    if (error) await throwInvokeError(error)
     if (data?.error) throw new Error(data.error)
 
     return (data?.results?.[0] ?? null) as FnsSyncResult | null
@@ -59,7 +77,7 @@ export const fnsSyncService = {
       },
     })
 
-    if (error) throw error
+    if (error) await throwInvokeError(error)
     if (data?.error) throw new Error(data.error)
 
     return (data?.results ?? []) as FnsSyncResult[]
@@ -71,7 +89,7 @@ export const fnsSyncService = {
     const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
       body: { operation: 'create_backup', emenda_ids: emendaIds, request_year: requestYear, batch_id: batchId },
     })
-    if (error) throw error
+    if (error) await throwInvokeError(error)
     if (data?.error) throw new Error(data.error)
     return data as { success: true; backup_group_id: string; backed_up: number }
   },
@@ -80,7 +98,7 @@ export const fnsSyncService = {
     const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
       body: { operation: 'list_backups', request_year: requestYear },
     })
-    if (error) throw error
+    if (error) await throwInvokeError(error)
     if (data?.error) throw new Error(data.error)
     return (data?.backups ?? []) as FnsBackupEntry[]
   },
@@ -89,7 +107,7 @@ export const fnsSyncService = {
     const { data, error } = await supabase.functions.invoke('sync-fns-proposal', {
       body: { operation: 'restore_backup', backup_group_id: backupGroupId },
     })
-    if (error) throw error
+    if (error) await throwInvokeError(error)
     if (data?.error) throw new Error(data.error)
     return data as { success: true; restored: number }
   },
