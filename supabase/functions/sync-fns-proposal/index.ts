@@ -255,6 +255,8 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}))
     const apply = body.apply === true
+    const requestYear = Number.isInteger(body.request_year) ? body.request_year : null
+    const batchId = typeof body.batch_id === 'string' && body.batch_id ? body.batch_id : null
     const requestedIds = Array.isArray(body.emenda_ids)
       ? body.emenda_ids.filter((value: unknown) => typeof value === 'string')
       : body.emenda_id
@@ -263,6 +265,11 @@ Deno.serve(async (req: Request) => {
     const requestedNumbers = Array.isArray(body.proposal_numbers)
       ? body.proposal_numbers.map(normalizeProposalNumber).filter(Boolean)
       : []
+
+    const isBulkRequest = requestedIds.length > 1 || requestedNumbers.length > 1 || batchId !== null
+    if (isBulkRequest && profile.role !== 'ADMIN') {
+      return jsonResponse({ error: 'Somente administradores podem executar sincronização em massa' }, 403)
+    }
 
     if (requestedIds.length === 0 && requestedNumbers.length === 0) {
       return jsonResponse({ error: 'Informe emenda_id, emenda_ids ou proposal_numbers' }, 400)
@@ -302,6 +309,8 @@ Deno.serve(async (req: Request) => {
             official_data: official,
             stages_data: stages,
             synced_by: user.id,
+            request_year: requestYear,
+            batch_id: batchId,
           })
           results.push({ emenda_id: amendment.id, numero_proposta: proposalNumber, success: false, error: 'Proposta não encontrada no FNS' })
           continue
@@ -386,11 +395,21 @@ Deno.serve(async (req: Request) => {
             ...verifiedBanking,
           }
 
-          paymentPreview.push({ ...transfer, action: existingTransfer ? 'existing' : 'insert' })
+          const bankingChanged = Boolean(
+            existingTransfer && detailedPayment?.contaCorrente && (
+              String(existingTransfer.bank_code ?? '') !== String(verifiedBanking.bank_code ?? '') ||
+              String(existingTransfer.branch_number ?? '') !== String(verifiedBanking.branch_number ?? '') ||
+              String(existingTransfer.account_number ?? '') !== String(verifiedBanking.account_number ?? '')
+            )
+          )
+          paymentPreview.push({
+            ...transfer,
+            action: existingTransfer ? (bankingChanged ? 'update' : 'existing') : 'insert',
+          })
           if (apply && !existingTransfer) {
             const { error: transferError } = await adminClient.from('repasses').insert(transfer)
             if (transferError) throw transferError
-          } else if (apply && existingTransfer && detailedPayment?.contaCorrente) {
+          } else if (apply && existingTransfer && bankingChanged) {
             const { error: bankingError } = await adminClient
               .from('repasses')
               .update(verifiedBanking)
@@ -484,6 +503,8 @@ Deno.serve(async (req: Request) => {
           applied_changes: apply ? changes : {},
           conflicts,
           synced_by: user.id,
+          request_year: requestYear,
+          batch_id: batchId,
         })
         if (historyError) throw historyError
 
@@ -508,6 +529,8 @@ Deno.serve(async (req: Request) => {
           status: 'ERROR',
           error_message: message,
           synced_by: user.id,
+          request_year: requestYear,
+          batch_id: batchId,
         })
         results.push({ emenda_id: amendment.id, numero_proposta: proposalNumber, success: false, error: message })
       }

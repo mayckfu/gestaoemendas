@@ -14,6 +14,7 @@ import { AuditLogsTable } from '../components/AuditLogsTable'
 import { SecurityNotifications } from '../components/SecurityNotifications'
 import { VisitorModeConfig } from '../components/VisitorModeConfig'
 import { YearsTable, ConfiguracaoAno } from '../components/YearsTable'
+import { FnsBulkSyncTab } from '../components/FnsBulkSyncTab'
 import { useAuth } from '@/contexts/AuthContext'
 import { User, Cargo, AuditLog } from '@/lib/mock-data'
 import { supabase } from '@/lib/supabase/client'
@@ -26,6 +27,7 @@ import {
   Users,
   Briefcase,
   History,
+  DatabaseZap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -360,6 +362,9 @@ const AdminPage = () => {
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" /> Segurança
           </TabsTrigger>
+          <TabsTrigger value="fns" className="flex items-center gap-2">
+            <DatabaseZap className="h-4 w-4" /> Sincronização FNS
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -439,6 +444,20 @@ const AdminPage = () => {
         <TabsContent value="security" className="space-y-6">
           <VisitorModeConfig />
           <SecurityNotifications />
+        </TabsContent>
+
+        <TabsContent value="fns">
+          <Card className="shadow-sm border border-neutral-200 dark:border-neutral-800">
+            <CardHeader>
+              <CardTitle>Sincronização FNS em Massa</CardTitle>
+              <CardDescription>
+                Consulte as propostas por ano, revise as mudanças encontradas e autorize somente os registros selecionados.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FnsBulkSyncTab years={configYears.map((item) => item.ano)} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
