@@ -451,12 +451,28 @@ Deno.serve(async (req: Request) => {
             fns_payment_data: detailedPayment,
           } : {}
 
-          const { data: existingTransfer } = await adminClient
+          let { data: existingTransfer } = await adminClient
             .from('repasses')
-            .select('id,valor,data,status,bank_code,branch_number,account_number')
+            .select('id,valor,data,status,fonte,ordem_bancaria,bank_code,branch_number,account_number')
             .eq('emenda_id', amendment.id)
             .eq('ordem_bancaria', bankOrder)
             .maybeSingle()
+
+          let legacyMatch = false
+          if (!existingTransfer) {
+            const { data: legacyCandidates, error: legacyError } = await adminClient
+              .from('repasses')
+              .select('id,valor,data,status,fonte,ordem_bancaria,bank_code,branch_number,account_number')
+              .eq('emenda_id', amendment.id)
+              .eq('valor', Number(payment.vlLiquido ?? 0))
+              .eq('status', 'REPASSADO')
+              .eq('fonte', 'INVESTSUS')
+            if (legacyError) throw legacyError
+            if (legacyCandidates?.length === 1) {
+              existingTransfer = legacyCandidates[0]
+              legacyMatch = true
+            }
+          }
 
           const transfer = {
             emenda_id: amendment.id,
@@ -478,15 +494,15 @@ Deno.serve(async (req: Request) => {
           )
           paymentPreview.push({
             ...transfer,
-            action: existingTransfer ? (bankingChanged ? 'update' : 'existing') : 'insert',
+            action: existingTransfer ? (bankingChanged || legacyMatch ? 'update' : 'existing') : 'insert',
           })
           if (apply && !existingTransfer) {
             const { error: transferError } = await adminClient.from('repasses').insert(transfer)
             if (transferError) throw transferError
-          } else if (apply && existingTransfer && bankingChanged) {
+          } else if (apply && existingTransfer && (bankingChanged || legacyMatch)) {
             const { error: bankingError } = await adminClient
               .from('repasses')
-              .update(verifiedBanking)
+              .update(legacyMatch ? transfer : verifiedBanking)
               .eq('id', existingTransfer.id)
             if (bankingError) throw bankingError
           }
