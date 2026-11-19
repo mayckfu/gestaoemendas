@@ -365,9 +365,10 @@ const RelatoriosPage = () => {
     const grouping: Record<string, Record<string, number>> = {}
     const displayNameMap: Record<string, string> = {}
     const getDisplayName = (name: string) => {
-      const key = normalizeNameKey(name)
+      const safeName = String(name ?? '').trim() || 'Não informado'
+      const key = normalizeNameKey(safeName)
       if (!displayNameMap[key]) {
-        displayNameMap[key] = name.trim().replace(/\s+/g, ' ')
+        displayNameMap[key] = safeName.replace(/\s+/g, ' ')
       }
       return displayNameMap[key]
     }

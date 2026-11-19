@@ -100,7 +100,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session?.user?.id, fetchProfile])
 
   const resolveLoginEmail = async (loginIdentifier: string) => {
-    const normalizedLogin = loginIdentifier.trim()
+    const normalizedLogin = String(loginIdentifier ?? '').trim()
+
+    if (!normalizedLogin) {
+      throw new Error('Informe o e-mail ou CPF')
+    }
 
     if (normalizedLogin.includes('@')) {
       return normalizedLogin.toLowerCase()

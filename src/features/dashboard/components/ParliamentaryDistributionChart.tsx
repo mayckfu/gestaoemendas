@@ -21,7 +21,9 @@ const chartConfig = {
 } satisfies ChartConfig
 
 function formatResponsibleTick(value: string) {
-  const normalized = value
+  const safeValue = String(value ?? '').trim()
+  if (!safeValue) return 'Não informado'
+  const normalized = safeValue
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
@@ -32,9 +34,9 @@ function formatResponsibleTick(value: string) {
   if (normalized.includes('COMISSAO DA SAUDE')) return 'Comissão Saúde'
   if (normalized.includes('BANCADA DE SERGIPE')) return 'Bancada SE'
 
-  const parts = value.trim().split(/\s+/)
+  const parts = safeValue.split(/\s+/)
   if (parts.length > 2) return `${parts[0]} ${parts[1]}`
-  return value
+  return safeValue
 }
 
 export function ParliamentaryDistributionChart({

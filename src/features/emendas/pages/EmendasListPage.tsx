@@ -372,7 +372,7 @@ const EmendasListPage = () => {
       if (!a.parlamentar) return
       const key = normalizeNameKey(a.parlamentar)
       if (!displayNameMap[key]) {
-        displayNameMap[key] = a.parlamentar.trim().replace(/\s+/g, ' ')
+        displayNameMap[key] = String(a.parlamentar).trim().replace(/\s+/g, ' ')
       }
     })
     return Object.values(displayNameMap).sort((a, b) => a.localeCompare(b))

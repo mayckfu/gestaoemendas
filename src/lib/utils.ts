@@ -72,8 +72,10 @@ export function formatBytes(bytes: number, decimals = 2) {
 }
 
 export function abbreviateName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return name
+  const safeName = String(name ?? '').trim()
+  if (!safeName) return 'Não informado'
+  const parts = safeName.split(/\s+/)
+  if (parts.length === 1) return safeName
   const first = parts[0]
   const last = parts[parts.length - 1]
   // Return format: F. Reis
