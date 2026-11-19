@@ -382,81 +382,84 @@ export function SismobSyncTab() {
       </Alert>
 
       {available === false && (
-        <Alert variant="destructive">
+        <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Agente local indisponível</AlertTitle>
+          <AlertTitle>Este computador não é um executor SISMOB</AlertTitle>
           <AlertDescription>
-            Inicie o projeto pelo atalho ou pelo comando npm start para carregar
-            também o conector do SISMOB.
+            Use “Solicitar coleta autenticada” acima. O computador principal ou
+            reserva fará o login e a coleta automaticamente. A conexão local só
+            aparece no computador em que o conector foi instalado.
           </AlertDescription>
         </Alert>
       )}
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-lg">Conexão com o SISMOB</CardTitle>
-              <CardDescription>
-                Abra a sessão, faça login e escolha uma proposta na janela
-                segura.
-              </CardDescription>
+      {available !== false && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-lg">Conexão com o SISMOB</CardTitle>
+                <CardDescription>
+                  Abra a sessão, faça login e escolha uma proposta na janela
+                  segura.
+                </CardDescription>
+              </div>
+              {statusBadge}
             </div>
-            {statusBadge}
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button
-            onClick={open}
-            disabled={busy || available === false || status.authenticated}
-            className="gap-2"
-          >
-            {busy && status.state === "closed" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <LockKeyhole className="h-4 w-4" />
-            )}
-            Abrir login seguro
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => void refreshStatus()}
-            disabled={busy}
-          >
-            Verificar login
-          </Button>
-          <Button
-            variant="outline"
-            onClick={collect}
-            disabled={busy || !status.authenticated}
-            className="gap-2"
-          >
-            <ExternalLink className="h-4 w-4" /> Coletar proposta aberta
-          </Button>
-          <Button
-            onClick={collectAll}
-            disabled={
-              busy || !status.authenticated || batch?.state === "running"
-            }
-            className="gap-2"
-          >
-            {batch?.state === "running" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ExternalLink className="h-4 w-4" />
-            )}
-            Coletar todas automaticamente
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={close}
-            disabled={busy || status.state === "closed"}
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4" /> Encerrar e apagar sessão
-          </Button>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button
+              onClick={open}
+              disabled={busy || available !== true || status.authenticated}
+              className="gap-2"
+            >
+              {busy && status.state === "closed" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LockKeyhole className="h-4 w-4" />
+              )}
+              Abrir login seguro
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => void refreshStatus()}
+              disabled={busy}
+            >
+              Verificar login
+            </Button>
+            <Button
+              variant="outline"
+              onClick={collect}
+              disabled={busy || !status.authenticated}
+              className="gap-2"
+            >
+              <ExternalLink className="h-4 w-4" /> Coletar proposta aberta
+            </Button>
+            <Button
+              onClick={collectAll}
+              disabled={
+                busy || !status.authenticated || batch?.state === "running"
+              }
+              className="gap-2"
+            >
+              {batch?.state === "running" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="h-4 w-4" />
+              )}
+              Coletar todas automaticamente
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={close}
+              disabled={busy || status.state === "closed"}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" /> Encerrar e apagar sessão
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {batch && (
         <Card>

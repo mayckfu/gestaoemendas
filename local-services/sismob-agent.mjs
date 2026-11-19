@@ -17,7 +17,7 @@ let context = null
 let page = null
 let lastError = null
 let activeJob = null
-const WORKER_VERSION = '1.0.0-reserve'
+const WORKER_VERSION = '1.0.1-reserve'
 const workerConfigPath = new URL('./worker-config.json', import.meta.url)
 const credentialsPath = new URL('./worker-credentials.dpapi', import.meta.url)
 let fleetTimer = null
@@ -372,7 +372,10 @@ function readProtectedCredentials() {
   const nativeCredentialsPath = fileURLToPath(credentialsPath).replace(/'/g,"''")
   const script = `$d=Get-Content -Raw -LiteralPath '${nativeCredentialsPath}'|ConvertFrom-Json;$s=ConvertTo-SecureString $d.password;$b=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s);try{$p=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($b);[Console]::Write(($d.username+'|'+$p))}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b)}`
   const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', windowsHide: true })
-  if (result.status !== 0 || !result.stdout.includes('|')) throw new Error(`O Windows não conseguiu liberar a credencial protegida (${result.stderr.trim() || `código ${result.status}`}).`)
+  if (result.status !== 0 || !String(result.stdout || '').includes('|')) {
+    const nativeError = String(result.stderr || '').trim()
+    throw new Error(`O Windows não conseguiu liberar a credencial protegida (${nativeError || `código ${result.status}`}).`)
+  }
   const separator = result.stdout.indexOf('|')
   return { username: result.stdout.slice(0, separator), password: result.stdout.slice(separator + 1) }
 }
