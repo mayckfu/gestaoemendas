@@ -17,7 +17,7 @@ let context = null
 let page = null
 let lastError = null
 let activeJob = null
-const WORKER_VERSION = '1.0.3-reserve'
+const WORKER_VERSION = '1.0.4-reserve'
 const workerConfigPath = new URL('./worker-config.json', import.meta.url)
 const credentialsPath = new URL('./worker-credentials.dpapi', import.meta.url)
 let fleetTimer = null
@@ -411,19 +411,34 @@ async function executeFleetJob(config, job) {
     const credentials = readProtectedCredentials()
     await loginSession(credentials.username, credentials.password)
     credentials.password = ''
+    const { proposals: knownProposals = [] } = await workerApi(config,{action:'known_proposals'})
     const localJob = startCollectAll()
     while (localJob.state === 'running') {
       const total = Math.max(localJob.discovered,1)
       await workerApi(config,{action:'progress',job_id:job.id,started_at:startedAt,progress:Math.min(95,Math.round(localJob.processed/total*95)),current_item:localJob.current,total_items:localJob.discovered,processed_items:localJob.processed,success_items:localJob.results.length,failed_items:localJob.errors.length})
       await new Promise(resolve=>setTimeout(resolve,3000))
     }
-    for (const snapshot of localJob.results) await workerApi(config,{action:'save_snapshot',job_id:job.id,snapshot})
+    let combinedResults = [...localJob.results]
+    let combinedErrors = [...localJob.errors]
+    const failedNumbers = new Set(combinedErrors.map(item=>item.numero_proposta))
+    const retryProposals = knownProposals.filter(item=>failedNumbers.has(item.numero_proposta))
+    if (retryProposals.length) {
+      const retryJob = startCollectUrls(retryProposals)
+      while (retryJob.state === 'running') {
+        await workerApi(config,{action:'progress',job_id:job.id,started_at:startedAt,progress:96,current_item:`Nova tentativa: ${retryJob.current || 'propostas pendentes'}`,total_items:localJob.discovered,processed_items:localJob.processed,success_items:combinedResults.length+retryJob.results.length,failed_items:Math.max(0,combinedErrors.length-retryJob.results.length)})
+        await new Promise(resolve=>setTimeout(resolve,2000))
+      }
+      const recovered = new Set(retryJob.results.map(item=>item.numero_proposta))
+      combinedErrors = combinedErrors.filter(item=>!recovered.has(item.numero_proposta))
+      combinedResults = [...combinedResults.filter(item=>!recovered.has(item.numero_proposta)), ...retryJob.results]
+    }
+    for (const snapshot of combinedResults) await workerApi(config,{action:'save_snapshot',job_id:job.id,snapshot})
     const success = localJob.state === 'completed'
       && localJob.discovered > 0
-      && localJob.errors.length === 0
-      && localJob.results.length === localJob.discovered
+      && combinedErrors.length === 0
+      && combinedResults.length === localJob.discovered
     await closeSession()
-    await workerApi(config,{action:'finish',job_id:job.id,success,progress:success?100:95,result_summary:{discovered:localJob.discovered,processed:localJob.processed,success:localJob.results.length,failed:localJob.errors.length,errors:localJob.errors},error:success?null:(localJob.error||`Coleta incompleta: ${localJob.results.length} de ${localJob.discovered} proposta(s).`)})
+    await workerApi(config,{action:'finish',job_id:job.id,success,progress:success?100:95,result_summary:{discovered:localJob.discovered,processed:localJob.processed,success:combinedResults.length,failed:combinedErrors.length,errors:combinedErrors},error:success?null:(localJob.error||`Coleta incompleta: ${combinedResults.length} de ${localJob.discovered} proposta(s).`)})
   } catch (error) {
     await closeSession().catch(()=>{})
     await workerApi(config,{action:'finish',job_id:job.id,success:false,error:error instanceof Error?error.message:String(error)}).catch(()=>{})

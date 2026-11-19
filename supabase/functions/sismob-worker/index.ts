@@ -27,6 +27,17 @@ Deno.serve(async (req) => {
       if (error) throw error
       return json({ job: data?.[0] || null })
     }
+    if (action === 'known_proposals') {
+      const { data, error } = await admin.from('sismob_sync_snapshots').select('numero_proposta,source_url,collected_at').not('numero_proposta', 'is', null).order('collected_at', { ascending: false }).limit(500)
+      if (error) throw error
+      const unique = new Map<string, { numero_proposta: string; source_url: string }>()
+      for (const row of data || []) {
+        if (!unique.has(row.numero_proposta) && /^https:\/\/sismob\.saude\.gov\.br\/sismob2\/#\/municipio\/visualizar-proposta\?proposta-id=\d+$/.test(row.source_url || '')) {
+          unique.set(row.numero_proposta, { numero_proposta: row.numero_proposta, source_url: row.source_url })
+        }
+      }
+      return json({ proposals: [...unique.values()] })
+    }
     if (action === 'progress') {
       const patch = { status: 'RUNNING', started_at: body.started_at || new Date().toISOString(), heartbeat_at: new Date().toISOString(), lease_until: new Date(Date.now()+120000).toISOString(), progress: body.progress || 0, current_item: body.current_item || null, total_items: body.total_items || null, processed_items: body.processed_items || 0, success_items: body.success_items || 0, failed_items: body.failed_items || 0 }
       await admin.from('sismob_sync_jobs').update(patch).eq('id', body.job_id).eq('claimed_by', workerId)
