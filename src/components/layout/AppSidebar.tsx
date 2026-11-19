@@ -1,4 +1,4 @@
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Home,
   FileText,
@@ -8,8 +8,8 @@ import {
   Map,
   Calculator,
   HardDriveDownload,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -19,81 +19,86 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { useAuth } from '@/contexts/AuthContext'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 export const AppSidebar = () => {
-  const { pathname } = useLocation()
-  const [searchParams] = useSearchParams()
-  const { state } = useSidebar()
-  const { user, isAdmin, logout } = useAuth()
-  const isExpanded = state === 'expanded'
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  const { state } = useSidebar();
+  const { user, isAdmin, logout, checkPermission } = useAuth();
+  const isExpanded = state === "expanded";
 
   const yearParam =
-    searchParams.get('year') ||
-    localStorage.getItem('asplan_dashboard_year') ||
-    new Date().getFullYear().toString()
+    searchParams.get("year") ||
+    localStorage.getItem("asplan_dashboard_year") ||
+    new Date().getFullYear().toString();
 
   const navLinks = [
-    { href: '/', label: 'Painel Analítico', icon: Home, visible: true },
-    { href: '/emendas', label: 'Emendas Federais', icon: FileText, visible: true },
+    { href: "/", label: "Painel Analítico", icon: Home, visible: true },
     {
-      href: '/quadro-estadual',
-      label: 'Emendas Estaduais',
+      href: "/emendas",
+      label: "Emendas Federais",
+      icon: FileText,
+      visible: true,
+    },
+    {
+      href: "/quadro-estadual",
+      label: "Emendas Estaduais",
       icon: Map,
       visible: true,
     },
     {
-      href: '/relatorios',
-      label: 'Relatórios',
+      href: "/relatorios",
+      label: "Relatórios",
       icon: BarChart2,
       visible: true,
     },
     {
-      href: '/pre-lancamento',
-      label: 'Contabilis Elaboração',
+      href: "/pre-lancamento",
+      label: "Contabilis Elaboração",
       icon: Calculator,
       visible: true,
     },
     {
-      href: '/sismob',
-      label: 'Central SISMOB',
+      href: "/sismob",
+      label: "Obras SISMOB",
       icon: HardDriveDownload,
-      visible: isAdmin,
+      visible: checkPermission(["ADMIN", "GESTOR"]),
     },
     {
-      href: '/admin',
-      label: 'Administração',
+      href: "/admin",
+      label: "Administração",
       icon: Settings,
       visible: isAdmin,
     },
-  ]
+  ];
 
   const getHref = (baseHref: string) => {
     const preserveYearRoutes = [
-      '/',
-      '/emendas',
-      '/quadro-estadual',
-      '/relatorios',
-      '/propostas/mac',
-      '/propostas/pap',
-    ]
+      "/",
+      "/emendas",
+      "/quadro-estadual",
+      "/relatorios",
+      "/propostas/mac",
+      "/propostas/pap",
+    ];
     if (preserveYearRoutes.includes(baseHref)) {
-      return `${baseHref}?year=${yearParam}`
+      return `${baseHref}?year=${yearParam}`;
     }
-    return baseHref
-  }
+    return baseHref;
+  };
 
   const userInitials = user?.name
     ? user.name
-        .split(' ')
+        .split(" ")
         .map((n) => n[0])
-        .join('')
+        .join("")
         .substring(0, 2)
         .toUpperCase()
-    : 'US'
+    : "US";
 
   return (
     <Sidebar className="border-r border-border bg-white shadow-soft z-40 print:hidden">
@@ -121,8 +126,8 @@ export const AppSidebar = () => {
       {/* User Profile Section */}
       <div
         className={cn(
-          'flex flex-col gap-3 px-4 py-6 border-b border-border transition-all bg-brand-50/30',
-          !isExpanded && 'items-center px-2',
+          "flex flex-col gap-3 px-4 py-6 border-b border-border transition-all bg-brand-50/30",
+          !isExpanded && "items-center px-2",
         )}
       >
         <div className="flex items-center gap-3">
@@ -134,10 +139,10 @@ export const AppSidebar = () => {
           {isExpanded && (
             <div className="flex flex-col overflow-hidden animate-fade-in">
               <span className="text-sm font-semibold text-brand-900 truncate">
-                {user?.name || 'Usuário'}
+                {user?.name || "Usuário"}
               </span>
               <span className="text-xs text-brand-600 uppercase font-medium tracking-wide truncate">
-                {user?.role || 'Visitante'}
+                {user?.role || "Visitante"}
               </span>
             </div>
           )}
@@ -149,7 +154,7 @@ export const AppSidebar = () => {
           {navLinks
             .filter((link) => link.visible)
             .map(({ href, label, icon: Icon }) => {
-              const isActive = pathname === href
+              const isActive = pathname === href;
               return (
                 <SidebarMenuItem key={label}>
                   <SidebarMenuButton
@@ -157,10 +162,10 @@ export const AppSidebar = () => {
                     isActive={isActive}
                     tooltip={label}
                     className={cn(
-                      'w-full justify-start gap-3 px-4 py-3 rounded-r-lg rounded-l-none transition-all duration-200 group relative overflow-hidden',
+                      "w-full justify-start gap-3 px-4 py-3 rounded-r-lg rounded-l-none transition-all duration-200 group relative overflow-hidden",
                       isActive
-                        ? 'bg-brand-50 text-brand-700 font-semibold border-l-4 border-brand-700'
-                        : 'text-neutral-600 hover:bg-neutral-50 hover:text-brand-700 border-l-4 border-transparent',
+                        ? "bg-brand-50 text-brand-700 font-semibold border-l-4 border-brand-700"
+                        : "text-neutral-600 hover:bg-neutral-50 hover:text-brand-700 border-l-4 border-transparent",
                     )}
                   >
                     <Link
@@ -169,10 +174,10 @@ export const AppSidebar = () => {
                     >
                       <Icon
                         className={cn(
-                          'h-5 w-5 shrink-0 transition-colors',
+                          "h-5 w-5 shrink-0 transition-colors",
                           isActive
-                            ? 'text-brand-700'
-                            : 'text-neutral-400 group-hover:text-brand-600',
+                            ? "text-brand-700"
+                            : "text-neutral-400 group-hover:text-brand-600",
                         )}
                       />
                       {isExpanded && (
@@ -181,7 +186,7 @@ export const AppSidebar = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )
+              );
             })}
         </SidebarMenu>
       </SidebarContent>
@@ -190,8 +195,8 @@ export const AppSidebar = () => {
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start text-neutral-600 hover:text-red-600 hover:bg-red-50 gap-3',
-            !isExpanded && 'justify-center px-0',
+            "w-full justify-start text-neutral-600 hover:text-red-600 hover:bg-red-50 gap-3",
+            !isExpanded && "justify-center px-0",
           )}
           onClick={logout}
         >
@@ -200,5 +205,5 @@ export const AppSidebar = () => {
         </Button>
       </SidebarFooter>
     </Sidebar>
-  )
-}
+  );
+};
