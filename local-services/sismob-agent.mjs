@@ -17,7 +17,7 @@ let context = null
 let page = null
 let lastError = null
 let activeJob = null
-const WORKER_VERSION = '1.0.1-reserve'
+const WORKER_VERSION = '1.0.2-reserve'
 const workerConfigPath = new URL('./worker-config.json', import.meta.url)
 const credentialsPath = new URL('./worker-credentials.dpapi', import.meta.url)
 let fleetTimer = null
@@ -371,9 +371,15 @@ function readProtectedCredentials() {
   if (!existsSync(credentialsPath)) throw new Error('Credencial protegida do SISMOB não configurada neste computador.')
   const nativeCredentialsPath = fileURLToPath(credentialsPath).replace(/'/g,"''")
   const script = `$d=Get-Content -Raw -LiteralPath '${nativeCredentialsPath}'|ConvertFrom-Json;$s=ConvertTo-SecureString $d.password;$b=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s);try{$p=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($b);[Console]::Write(($d.username+'|'+$p))}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b)}`
-  const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', windowsHide: true })
+  const powershellCandidates = [
+    `${process.env.ProgramFiles || 'C:\\Program Files'}\\PowerShell\\7\\pwsh.exe`,
+    `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`,
+  ]
+  const powershellPath = powershellCandidates.find((candidate) => existsSync(candidate))
+  if (!powershellPath) throw new Error('PowerShell do Windows não foi encontrado para liberar a credencial protegida.')
+  const result = spawnSync(powershellPath, ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', windowsHide: true })
   if (result.status !== 0 || !String(result.stdout || '').includes('|')) {
-    const nativeError = String(result.stderr || '').trim()
+    const nativeError = String(result.stderr || result.error?.message || '').trim()
     throw new Error(`O Windows não conseguiu liberar a credencial protegida (${nativeError || `código ${result.status}`}).`)
   }
   const separator = result.stdout.indexOf('|')
