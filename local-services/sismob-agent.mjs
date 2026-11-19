@@ -17,7 +17,7 @@ let context = null
 let page = null
 let lastError = null
 let activeJob = null
-const WORKER_VERSION = '1.0.2-reserve'
+const WORKER_VERSION = '1.0.3-reserve'
 const workerConfigPath = new URL('./worker-config.json', import.meta.url)
 const credentialsPath = new URL('./worker-credentials.dpapi', import.meta.url)
 let fleetTimer = null
@@ -204,9 +204,23 @@ async function collectCurrent() {
 
 async function proposalNumbersOnPage() {
   return page.evaluate(() => {
-    const matches = (document.body.innerText || '').match(/\b\d{2,6}\.\d{3,7}\/\d{2}-\d{3}\b/g) || []
+    const cardText = Array.from(document.querySelectorAll('[id^="CARD_PROPOSTA_"]'))
+      .map((card) => card.textContent || '')
+      .join('\n')
+    const matches = cardText.match(/\b\d{2,6}\.\d{3,7}\/\d{2}-\d{3}\b/g) || []
     return [...new Set(matches)]
   })
+}
+
+async function returnToProposalList() {
+  await page.goto(SISMOB_MUNICIPIO_URL, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  await dismissReadOnlyNotices()
+  await page.waitForFunction(
+    () => document.querySelectorAll('[id^="CARD_PROPOSTA_"]').length > 0,
+    null,
+    { timeout: 30000 },
+  )
+  await page.waitForFunction(() => !document.querySelector('.v-window-modalitycurtain'), null, { timeout: 10000 }).catch(() => {})
 }
 
 async function openProposalByNumber(number) {
@@ -214,14 +228,15 @@ async function openProposalByNumber(number) {
   await page.waitForFunction(() => !document.querySelector('.v-window-modalitycurtain'), null, { timeout: 10000 }).catch(() => {})
   const card = page.locator('[id^="CARD_PROPOSTA_"]').filter({ hasText: number }).first()
   const text = page.getByText(number, { exact: false }).first()
-  const target = await card.isVisible({ timeout: 1500 }).catch(() => false) ? card : text
-  if (!(await target.isVisible({ timeout: 1500 }).catch(() => false))) return false
+  const target = await card.isVisible({ timeout: 15000 }).catch(() => false) ? card : text
+  if (!(await target.isVisible({ timeout: 15000 }).catch(() => false))) return false
+  await target.scrollIntoViewIfNeeded().catch(() => {})
   const before = page.url()
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await target.click({ timeout: 5000, force: true }).catch(() => {})
-    await page.waitForTimeout(1500)
+    await page.waitForURL(/visualizar-proposta/, { timeout: 10000 }).catch(() => {})
     if (/visualizar-proposta/.test(page.url())) return true
-    await page.waitForTimeout(800)
+    await page.waitForTimeout(1200)
   }
   if (/visualizar-proposta/.test(page.url())) return true
   if (page.url() !== before) return /visualizar-proposta/.test(page.url())
@@ -251,9 +266,7 @@ async function runCollectAll(job) {
   try {
     const current = await status()
     if (!current.authenticated) throw new Error('Conclua o login na janela do SISMOB primeiro.')
-    await page.goto(SISMOB_MUNICIPIO_URL, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForTimeout(1500)
-    await dismissReadOnlyNotices()
+    await returnToProposalList()
     const visited = new Set()
 
     for (let pageNumber = 1; pageNumber <= 100 && !job.cancelled; pageNumber += 1) {
@@ -269,7 +282,7 @@ async function runCollectAll(job) {
         try {
           if (await openProposalByNumber(number)) {
             const snapshot = await collectCurrent()
-            snapshot.numero_proposta = snapshot.numero_proposta || number
+            snapshot.numero_proposta = number
             job.results.push(snapshot)
           } else {
             job.errors.push({ numero_proposta: number, error: 'O cartão não abriu a tela de visualização.' })
@@ -277,9 +290,7 @@ async function runCollectAll(job) {
         } catch (error) {
           job.errors.push({ numero_proposta: number, error: error instanceof Error ? error.message : String(error) })
         } finally {
-          await page.goto(SISMOB_MUNICIPIO_URL, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {})
-          await page.waitForFunction(() => !document.querySelector('.v-window-modalitycurtain'), null, { timeout: 10000 }).catch(() => {})
-          await page.waitForTimeout(1800)
+          await returnToProposalList().catch(() => {})
           job.processed += 1
         }
       }
@@ -329,7 +340,7 @@ async function runCollectUrls(job, proposals) {
         await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 60000 })
         await page.waitForTimeout(1200)
         const snapshot = await collectCurrent()
-        snapshot.numero_proposta = snapshot.numero_proposta || proposal.numero_proposta
+        snapshot.numero_proposta = proposal.numero_proposta
         job.results.push(snapshot)
       } catch (error) {
         job.errors.push({ numero_proposta: proposal.numero_proposta, error: error instanceof Error ? error.message : String(error) })
