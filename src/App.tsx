@@ -24,6 +24,7 @@ import LoginPage from './features/auth/pages/LoginPage'
 import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage'
 import ResetPasswordPage from './features/auth/pages/ResetPasswordPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import SismobMonitorPage from './features/sismob/pages/SismobMonitorPage'
 
 const App = () => (
   <BrowserRouter
@@ -71,6 +72,7 @@ const App = () => (
                         element={<PreLancamentoPage />}
                       />
                       <Route path="/admin" element={<AdminPage />} />
+                      <Route path="/sismob" element={<SismobMonitorPage />} />
                       <Route path="/perfil" element={<ProfilePage />} />
                       <Route
                         path="/propostas/mac"

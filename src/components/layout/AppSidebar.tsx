@@ -7,6 +7,7 @@ import {
   LogOut,
   Map,
   Calculator,
+  HardDriveDownload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -55,6 +56,12 @@ export const AppSidebar = () => {
       label: 'Contabilis Elaboração',
       icon: Calculator,
       visible: true,
+    },
+    {
+      href: '/sismob',
+      label: 'Central SISMOB',
+      icon: HardDriveDownload,
+      visible: isAdmin,
     },
     {
       href: '/admin',

@@ -50,3 +50,5 @@ BACKUP_PONTO_DE_RESTAURACAO/
 docs/
 supabase/.temp/
 .temp/
+local-services/worker-config.json
+local-services/worker-credentials.dpapi

@@ -15,6 +15,7 @@ import { SecurityNotifications } from '../components/SecurityNotifications'
 import { VisitorModeConfig } from '../components/VisitorModeConfig'
 import { YearsTable, ConfiguracaoAno } from '../components/YearsTable'
 import { FnsBulkSyncTab } from '../components/FnsBulkSyncTab'
+import { SismobSyncTab } from '../components/SismobSyncTab'
 import { useAuth } from '@/contexts/AuthContext'
 import { User, Cargo, AuditLog } from '@/lib/mock-data'
 import { supabase } from '@/lib/supabase/client'
@@ -28,6 +29,7 @@ import {
   Briefcase,
   History,
   DatabaseZap,
+  Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -365,6 +367,9 @@ const AdminPage = () => {
           <TabsTrigger value="fns" className="flex items-center gap-2">
             <DatabaseZap className="h-4 w-4" /> Sincronização FNS
           </TabsTrigger>
+          <TabsTrigger value="sismob" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" /> SISMOB
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -456,6 +461,20 @@ const AdminPage = () => {
             </CardHeader>
             <CardContent>
               <FnsBulkSyncTab years={configYears.map((item) => item.ano)} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sismob">
+          <Card className="shadow-sm border border-neutral-200 dark:border-neutral-800">
+            <CardHeader>
+              <CardTitle>Consulta autenticada do SISMOB</CardTitle>
+              <CardDescription>
+                Colete uma prévia protegida, confira os dados e salve somente após autorização.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SismobSyncTab />
             </CardContent>
           </Card>
         </TabsContent>
